@@ -68,26 +68,22 @@ def STC_set_tensor(absIndex, var_name, symmetry):
         # two indexes case
         # ----------------
         if(n_total == 2):
-            if(sym_type == 'Symmetric'):
-                globals()[var_name] = manifd.tensor_field(n_contravariant,
-                                                          n_covariant,
-                                                          name=var_name,
-                                                          sym=(0, 1))
+            if(sym_type == 'sym'):
+                globals()[var_name] = manifd.tensor_field(
+                    n_contravariant, n_covariant,
+                    name=var_name, sym=(0, 1))
                 for a in range1(index_min, index_max):
                     for b in range1(a, index_max):
                         globals()[var_name][a, b] = var("".join(
                             [var_name, str(a), str(b)]))
-
-            elif(sym_type == 'Antisymmetric'):
-                globals()[var_name] = manifd.tensor_field(n_contravariant,
-                                                          n_covariant,
-                                                          name=var_name,
-                                                          antisym=(0, 1))
+            elif(sym_type == 'antisym'):
+                globals()[var_name] = manifd.tensor_field(
+                    n_contravariant, n_covariant,
+                    name=var_name, antisym=(0, 1))
                 for a in range1(index_min, index_max):
                     for b in range1(a+1, index_max):
                         globals()[var_name][a, b] = var("".join(
                             [var_name, str(a), str(b)]))
-
             else:
                 raise Exception("symmetry of %s undefined yet!!!" % var_name)
 
@@ -96,24 +92,22 @@ def STC_set_tensor(absIndex, var_name, symmetry):
         # ------------------
         elif(n_total == 3):
             sym_list = sym_lists[0].strip('{}').split(',')
+
             # c(ab) or c[ab]
-            if(sym_list[0] == absIndex_list[1] and
-               sym_list[1] == absIndex_list[2]):
-                if(sym_type == 'Symmetric'):
-                    globals()[var_name] = manifd.tensor_field(n_contravariant,
-                                                              n_covariant,
-                                                              name=var_name,
-                                                              sym=(1, 2))
+            if(sym_list[0] == '1' and sym_list[1] == '2'):
+                if(sym_type == 'sym'):
+                    globals()[var_name] = manifd.tensor_field(
+                        n_contravariant, n_covariant,
+                        name=var_name, sym=(1, 2))
                     for c in range1(index_min, index_max):
                         for a in range1(index_min, index_max):
                             for b in range1(a, index_max):
                                 globals()[var_name][c, a, b] = var("".join(
                                     [var_name, str(c), str(a), str(b)]))
-                elif(sym_type == 'Antisymmetric'):
-                    globals()[var_name] = manifd.tensor_field(n_contravariant,
-                                                              n_covariant,
-                                                              name=var_name,
-                                                              antisym=(1, 2))
+                elif(sym_type == 'antisym'):
+                    globals()[var_name] = manifd.tensor_field(
+                        n_contravariant, n_covariant,
+                        name=var_name, antisym=(1, 2))
                     for c in range1(index_min, index_max):
                         for a in range1(index_min, index_max):
                             for b in range1(a+1, index_max):
@@ -124,23 +118,20 @@ def STC_set_tensor(absIndex, var_name, symmetry):
                                     var_name)
 
             # (ab)c or [ab]c
-            if(sym_list[0] == absIndex_list[0] and
-               sym_list[1] == absIndex_list[1]):
-                if(sym_type == 'Symmetric'):
-                    globals()[var_name] = manifd.tensor_field(n_contravariant,
-                                                              n_covariant,
-                                                              name=var_name,
-                                                              sym=(0, 1))
+            if(sym_list[0] == '0' and sym_list[1] == '1'):
+                if(sym_type == 'sym'):
+                    globals()[var_name] = manifd.tensor_field(
+                        n_contravariant, n_covariant,
+                        name=var_name, sym=(0, 1))
                     for a in range1(index_min, index_max):
                         for b in range1(a, index_max):
                             for c in range1(index_min, index_max):
                                 globals()[var_name][a, b, c] = var("".join(
                                     [var_name, str(a), str(b), str(c)]))
-                elif(sym_type == 'Antisymmetric'):
-                    globals()[var_name] = manifd.tensor_field(n_contravariant,
-                                                              n_covariant,
-                                                              name=var_name,
-                                                              antisym=(0, 1))
+                elif(sym_type == 'antisym'):
+                    globals()[var_name] = manifd.tensor_field(
+                        n_contravariant, n_covariant,
+                        name=var_name, antisym=(0, 1))
                     for a in range1(index_min, index_max):
                         for b in range1(a+1, index_max):
                             for c in range1(index_min, index_max):
@@ -154,8 +145,25 @@ def STC_set_tensor(absIndex, var_name, symmetry):
         # four indexes case
         # -----------------
         elif(n_total == 4):
-            print("absindex = ", absIndex_list, "sym_lists = ", sym_lists)
-            print("len(sym_lists) = ", len(sym_lists))
+            if(len(sym_lists) == 1):
+                sym_list = sym_lists[0].strip('{}').split(',')
+                # ab(cd) or ab[cd]
+                # if(sym_list[0] == absIndex_list[2] and
+                #    sym_list[1] == absIndex_list[3]):
+                #     if(sym_type == 'sym'):
+                #         globals()[var_name] = manifd.tensor_field(
+                #             n_contravariant, n_covariant,
+                #             name=var_name, sym=(0, 1))
+                #         for a in range1(index_min, index_max):
+                #             for b in range1(a, index_max):
+                #                 for c in range1(index_min, index_max):
+                #                     globals()[var_name][a, b, c] = var(
+                #                         "".join(
+                #                         [var_name, str(a), str(b), str(c)]))
+            elif(len(sym_lists) == 2):
+                print("absindex = ", absIndex_list, "sym_lists = ", sym_lists)
+            else:
+                raise Exception("symmetry of %s undefined yet!!!" % var_name)
 
         # -----------
         # other cases
@@ -172,3 +180,18 @@ def STC_set_tensor(absIndex, var_name, symmetry):
 
     # add to export list
     __all__.append(var_name)
+
+
+'''
+def set_tensor(var_name, n_contravariant, n_covariant, n_index):
+    index_min = 0
+    index_max = 3
+
+    globals()[var_name] = manifd.tensor_field(n_contravariant, n_covariant,
+                                              name=var_name, sym=(0, 1))
+    for a in range1(index_min, index_max):
+        for b in range1(a, index_max):
+            for c in range1(index_min, index_max):
+                globals()[var_name][a, b, c] = var("".join(
+                    [var_name, str(a), str(b), str(c)]))
+                    '''
