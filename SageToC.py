@@ -6,7 +6,7 @@
 # packages #
 ############
 
-import STC_global
+import STC_global as Sg
 import re
 
 print('Welcome to SageToC (a code generator)')
@@ -18,9 +18,9 @@ print('Welcome to SageToC (a code generator)')
 
 class STC_Tensor:
 
-    def __init__(self, name, absIndex, symmetry=None):
+    def __init__(self, name, absIndex_list, symmetry):
         self.name = name
-        self.absIndex = absIndex
+        self.absIndex = absIndex_list
         self.symmetry = symmetry
 
 
@@ -36,23 +36,19 @@ def read_varlist(varlist):
         var_info = var.split(', ')
         fullname = var_info[0]
         name = fullname.split('[')[0]
-        absIndex = re.search(r'\[.*?\]',
-                             fullname).group(0).strip('[]').split(',')
-        symmetry = ''
+        absIndex = re.search(r'\[.*?\]', fullname).group(0).strip('[]')
+        absIndex_list = None
+        symmetry = None
+        if(len(absIndex) > 0):
+            absIndex_list = absIndex.split(',')
         if(len(var_info) > 1):
             symmetry = var_info[1]
-        globals()[name] = STC_Tensor(name, absIndex, symmetry)
+
+        # set STC_tensor
+        globals()[name] = STC_Tensor(name, absIndex_list, symmetry)
         print(var_info)
 
         # add to var list
-        n_covariant = 0
-        n_contravariant = 0
-        for index in absIndex:
-            if '-' in index:
-                n_covariant += 1
-            else:
-                n_contravariant += 1
-        print("tensor type: (", n_covariant, ", ", n_contravariant, ")")
 
-        # define tensors
-        STC_global.set_tensors(1, 0, name)
+        # define Sage_tensor
+        Sg.STC_set_tensor(absIndex, name, symmetry)
