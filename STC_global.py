@@ -32,16 +32,15 @@ def STC_set_component(var_name, a=None, b=None, c=None, d=None):
 
 
 # set tensors
-def STC_set_tensor(absIndex, var_name, symmetry):
+def set_tensor(absIndex_list, var_name, symmetry_list):
+    print("absIndx_list = ", absIndex_list, " symmetry_list = ", symmetry_list)
     index_min = 0
     index_max = 3
     n_covariant = 0
     n_contravariant = 0
-    absIndex_list = None
 
     # set n_convariant and n_contravariant
-    if(len(absIndex) > 0):
-        absIndex_list = absIndex.split(',')
+    if(absIndex_list is not None):
         for index in absIndex_list:
             if '-' in index:
                 n_covariant += 1
@@ -60,26 +59,52 @@ def STC_set_tensor(absIndex, var_name, symmetry):
     # =========================
     # tensor case with symmetry
     # =========================
-    elif(symmetry):
-        sym_type = symmetry.split('[')[0]
-        sym_lists = re.findall(r'\{.*?\}', symmetry)
+    elif(symmetry_list is not None):
+        # set sym_typle and antisym_tuple
+        sym_tuple = None
+        antisym_tuple = None
+        if(len(symmetry_list) <= 2):
+            for symmetry in symmetry_list:
+                symmetry_type = symmetry.split('[')[0]
+                for sublist in re.findall(r'\{.*?\}', symmetry):
+                    symmetry_indexlist = sublist.strip('{}').split(',')
+                    if(symmetry_type == 'sym'):
+                        if(sym_tuple is not None):
+                            sym_tuple = [sym_tuple, tuple(
+                                [int(i) for i in symmetry_indexlist])]
+                        else:
+                            sym_tuple = tuple(
+                                [int(i) for i in symmetry_indexlist])
+                    if(symmetry_type == 'antisym'):
+                        if(antisym_tuple is not None):
+                            antisym_tuple = [antisym_tuple, tuple(
+                                [int(i) for i in symmetry_indexlist])]
+                        else:
+                            antisym_tuple = tuple(
+                                [int(i) for i in symmetry_indexlist])
+        else:
+            raise Exception("symmetry of %s undefined yet!!!" % var_name)
 
+        print("sym_tuple = ", sym_tuple, " antisym_tuple = ", antisym_tuple)
+
+        # define tensor
+        globals()[var_name] = manifd.tensor_field(
+            n_contravariant, n_covariant, name=var_name,
+            sym=sym_tuple, antisym=antisym_tuple)
+
+        # set components
         # ----------------
         # two indexes case
         # ----------------
         if(n_total == 2):
-            if(sym_type == 'sym'):
-                globals()[var_name] = manifd.tensor_field(
-                    n_contravariant, n_covariant,
-                    name=var_name, sym=(0, 1))
+            # (ab)
+            if(sym_tuple is not None):
                 for a in range1(index_min, index_max):
                     for b in range1(a, index_max):
                         globals()[var_name][a, b] = var("".join(
                             [var_name, str(a), str(b)]))
-            elif(sym_type == 'antisym'):
-                globals()[var_name] = manifd.tensor_field(
-                    n_contravariant, n_covariant,
-                    name=var_name, antisym=(0, 1))
+            # [ab]
+            elif(antisym_tuple is not None):
                 for a in range1(index_min, index_max):
                     for b in range1(a+1, index_max):
                         globals()[var_name][a, b] = var("".join(
@@ -91,47 +116,34 @@ def STC_set_tensor(absIndex, var_name, symmetry):
         # three indexes case
         # ------------------
         elif(n_total == 3):
-            sym_list = sym_lists[0].strip('{}').split(',')
-
-            # c(ab) or c[ab]
-            if(sym_list[0] == '1' and sym_list[1] == '2'):
-                if(sym_type == 'sym'):
-                    globals()[var_name] = manifd.tensor_field(
-                        n_contravariant, n_covariant,
-                        name=var_name, sym=(1, 2))
+            if(sym_tuple is not None):
+                # c(ab)
+                if(sym_tuple[0] == 1 and sym_tuple[1] == 2):
                     for c in range1(index_min, index_max):
                         for a in range1(index_min, index_max):
                             for b in range1(a, index_max):
                                 globals()[var_name][c, a, b] = var("".join(
                                     [var_name, str(c), str(a), str(b)]))
-                elif(sym_type == 'antisym'):
-                    globals()[var_name] = manifd.tensor_field(
-                        n_contravariant, n_covariant,
-                        name=var_name, antisym=(1, 2))
-                    for c in range1(index_min, index_max):
-                        for a in range1(index_min, index_max):
-                            for b in range1(a+1, index_max):
-                                globals()[var_name][c, a, b] = var("".join(
-                                    [var_name, str(c), str(a), str(b)]))
-                else:
-                    raise Exception("symmetry of %s undefined yet!!!" %
-                                    var_name)
-
-            # (ab)c or [ab]c
-            if(sym_list[0] == '0' and sym_list[1] == '1'):
-                if(sym_type == 'sym'):
-                    globals()[var_name] = manifd.tensor_field(
-                        n_contravariant, n_covariant,
-                        name=var_name, sym=(0, 1))
+                # (ab)c
+                elif(sym_tuple[0] == 0 and sym_tuple[1] == 1):
                     for a in range1(index_min, index_max):
                         for b in range1(a, index_max):
                             for c in range1(index_min, index_max):
                                 globals()[var_name][a, b, c] = var("".join(
                                     [var_name, str(a), str(b), str(c)]))
-                elif(sym_type == 'antisym'):
-                    globals()[var_name] = manifd.tensor_field(
-                        n_contravariant, n_covariant,
-                        name=var_name, antisym=(0, 1))
+                else:
+                    raise Exception("symmetry of %s undefined yet!!!" %
+                                    var_name)
+            if(antisym_tuple is not None):
+                # c[ab]
+                if(antisym_tuple[0] == 1 and antisym_tuple[1] == 2):
+                    for c in range1(index_min, index_max):
+                        for a in range1(index_min, index_max):
+                            for b in range1(a+1, index_max):
+                                globals()[var_name][c, a, b] = var("".join(
+                                    [var_name, str(c), str(a), str(b)]))
+                # [ab]c
+                elif(antisym_tuple[0] == 0 and antisym_tuple[1] == 1):
                     for a in range1(index_min, index_max):
                         for b in range1(a+1, index_max):
                             for c in range1(index_min, index_max):
@@ -145,25 +157,50 @@ def STC_set_tensor(absIndex, var_name, symmetry):
         # four indexes case
         # -----------------
         elif(n_total == 4):
-            if(len(sym_lists) == 1):
-                sym_list = sym_lists[0].strip('{}').split(',')
-                # ab(cd) or ab[cd]
-                # if(sym_list[0] == absIndex_list[2] and
-                #    sym_list[1] == absIndex_list[3]):
-                #     if(sym_type == 'sym'):
-                #         globals()[var_name] = manifd.tensor_field(
-                #             n_contravariant, n_covariant,
-                #             name=var_name, sym=(0, 1))
-                #         for a in range1(index_min, index_max):
-                #             for b in range1(a, index_max):
-                #                 for c in range1(index_min, index_max):
-                #                     globals()[var_name][a, b, c] = var(
-                #                         "".join(
-                #                         [var_name, str(a), str(b), str(c)]))
-            elif(len(sym_lists) == 2):
-                print("absindex = ", absIndex_list, "sym_lists = ", sym_lists)
-            else:
-                raise Exception("symmetry of %s undefined yet!!!" % var_name)
+            # cd(ab)
+            if(sym_tuple is not None and isinstance(sym_tuple, tuple)):
+                if(sym_tuple[0] == 2 and sym_tuple[1] == 3):
+                    for c in range1(index_min, index_max):
+                        for d in range1(index_min, index_max):
+                            for a in range1(index_min, index_max):
+                                for b in range1(a, index_max):
+                                    globals()[var_name][c, d, a, b] = var(
+                                        "".join([var_name, str(c), str(d),
+                                                 str(a), str(b)]))
+            # (cd)(ab)
+            elif(sym_tuple is not None and isinstance(sym_tuple, list)):
+                if(sym_tuple[0][0] == 0 and sym_tuple[0][1] == 1 and
+                   sym_tuple[1][0] == 2 and sym_tuple[1][1] == 3):
+                    for c in range1(index_min, index_max):
+                        for d in range1(c, index_max):
+                            for a in range1(index_min, index_max):
+                                for b in range1(a, index_max):
+                                    globals()[var_name][c, d, a, b] = var(
+                                        "".join([var_name, str(c), str(d),
+                                                 str(a), str(b)]))
+
+            # cd[ab]
+            if(antisym_tuple is not None):
+                if(antisym_tuple[0] == 2 and antisym_tuple[1] == 3):
+                    for c in range1(index_min, index_max):
+                        for d in range1(index_min, index_max):
+                            for a in range1(index_min, index_max):
+                                for b in range1(a+1, index_max):
+                                    globals()[var_name][c, d, a, b] = var(
+                                        "".join([var_name, str(c), str(d),
+                                                 str(a), str(b)]))
+            # [cd][ab]
+            elif(antisym_tuple is not None and
+                 isinstance(antisym_tuple, list)):
+                if(antisym_tuple[0][0] == 0 and antisym_tuple[0][1] == 1 and
+                   antisym_tuple[1][0] == 2 and antisym_tuple[1][1] == 3):
+                    for c in range1(index_min, index_max):
+                        for d in range1(c+1, index_max):
+                            for a in range1(index_min, index_max):
+                                for b in range1(a+1, index_max):
+                                    globals()[var_name][c, d, a, b] = var(
+                                        "".join([var_name, str(c), str(d),
+                                                 str(a), str(b)]))
 
         # -----------
         # other cases
@@ -180,18 +217,3 @@ def STC_set_tensor(absIndex, var_name, symmetry):
 
     # add to export list
     __all__.append(var_name)
-
-
-'''
-def set_tensor(var_name, n_contravariant, n_covariant, n_index):
-    index_min = 0
-    index_max = 3
-
-    globals()[var_name] = manifd.tensor_field(n_contravariant, n_covariant,
-                                              name=var_name, sym=(0, 1))
-    for a in range1(index_min, index_max):
-        for b in range1(a, index_max):
-            for c in range1(index_min, index_max):
-                globals()[var_name][a, b, c] = var("".join(
-                    [var_name, str(a), str(b), str(c)]))
-                    '''

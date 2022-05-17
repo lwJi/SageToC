@@ -18,10 +18,10 @@ print('Welcome to SageToC (a code generator)')
 
 class STC_Tensor:
 
-    def __init__(self, name, absIndex_list, symmetry):
+    def __init__(self, name, absIndex_list, symmetry_list):
         self.name = name
         self.absIndex = absIndex_list
-        self.symmetry = symmetry
+        self.symmetry = symmetry_list
 
 
 #############
@@ -38,17 +38,24 @@ def read_varlist(varlist):
         name = fullname.split('[')[0]
         absIndex = re.search(r'\[.*?\]', fullname).group(0).strip('[]')
         absIndex_list = None
-        symmetry = None
+        symmetry_list = None
+
         if(len(absIndex) > 0):
             absIndex_list = absIndex.split(',')
-        if(len(var_info) > 1):
-            symmetry = var_info[1]
+
+        if(len(var_info) == 2):
+            symmetry_list = [var_info[1]]
+        elif(len(var_info) == 3):
+            symmetry_list = [var_info[1], var_info[2]]
+        else:
+            if(len(var_info) > 1):
+                raise Exception("symmetry_list of %s undefined yet!!!" % var)
 
         # set STC_tensor
-        globals()[name] = STC_Tensor(name, absIndex_list, symmetry)
+        globals()[name] = STC_Tensor(name, absIndex_list, symmetry_list)
         print(var_info)
 
         # add to var list
 
         # define Sage_tensor
-        Sg.STC_set_tensor(absIndex, name, symmetry)
+        Sg.set_tensor(absIndex_list, name, symmetry_list)
