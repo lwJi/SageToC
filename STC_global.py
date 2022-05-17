@@ -180,7 +180,7 @@ def set_tensor(absIndex_list, var_name, symmetry_list):
                                                  str(a), str(b)]))
 
             # cd[ab]
-            if(antisym_tuple is not None):
+            if(antisym_tuple is not None and isinstance(antisym_tuple, tuple)):
                 if(antisym_tuple[0] == 2 and antisym_tuple[1] == 3):
                     for c in range1(index_min, index_max):
                         for d in range1(index_min, index_max):
