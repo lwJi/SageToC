@@ -3,11 +3,12 @@
 
 import re
 from sage.calculus.var import var
+from misc_functions import range1 as rg1
+
 
 ####################
 # global variables #
 ####################
-__all__ = ['dimens', 'manifd']
 
 # dimension
 dimens = None
@@ -15,10 +16,13 @@ dimens = None
 # manifold name
 manifd = None
 
+# for simple export
+__all__ = ['dimens', 'manifd']
 
-def range1(start, end):
-    return range(start, end+1)
 
+####################
+# global functions #
+####################
 
 # set tensors
 def define_tensor_and_set_components(absIndex_list, var_name, symmetry_list):
@@ -83,24 +87,24 @@ def set_components(var_name, n_total, sym_tuple, antisym_tuple):
     # tensor case without symmetry
     elif(sym_tuple is None and antisym_tuple is None):
         if(n_total == 1):
-            for a in range1(index_min, index_max):
+            for a in rg1(index_min, index_max):
                 globals()[var_name][a] = var("".join([var_name, str(a)]))
         elif(n_total == 2):
-            for a in range1(index_min, index_max):
-                for b in range1(index_min, index_max):
+            for a in rg1(index_min, index_max):
+                for b in rg1(index_min, index_max):
                     globals()[var_name][a, b] = var(
                         "".join([var_name, str(a), str(b)]))
         elif(n_total == 3):
-            for c in range1(index_min, index_max):
-                for a in range1(index_min, index_max):
-                    for b in range1(index_min, index_max):
+            for c in rg1(index_min, index_max):
+                for a in rg1(index_min, index_max):
+                    for b in rg1(index_min, index_max):
                         globals()[var_name][c, a, b] = var(
                             "".join([var_name, str(c), str(a), str(b)]))
         elif(n_total == 4):
-            for c in range1(index_min, index_max):
-                for d in range1(index_min, index_max):
-                    for a in range1(index_min, index_max):
-                        for b in range1(index_min, index_max):
+            for c in rg1(index_min, index_max):
+                for d in rg1(index_min, index_max):
+                    for a in rg1(index_min, index_max):
+                        for b in rg1(index_min, index_max):
                             globals()[var_name][c, d, a, b] = var(
                                 "".join([var_name,
                                          str(c), str(d), str(a), str(b)]))
@@ -113,14 +117,14 @@ def set_components(var_name, n_total, sym_tuple, antisym_tuple):
         if(n_total == 2):
             # (ab)
             if(sym_tuple is not None):
-                for a in range1(index_min, index_max):
-                    for b in range1(a, index_max):
+                for a in rg1(index_min, index_max):
+                    for b in rg1(a, index_max):
                         globals()[var_name][a, b] = var("".join(
                             [var_name, str(a), str(b)]))
             # [ab]
             elif(antisym_tuple is not None):
-                for a in range1(index_min, index_max):
-                    for b in range1(a+1, index_max):
+                for a in rg1(index_min, index_max):
+                    for b in rg1(a+1, index_max):
                         globals()[var_name][a, b] = var("".join(
                             [var_name, str(a), str(b)]))
             else:
@@ -132,16 +136,16 @@ def set_components(var_name, n_total, sym_tuple, antisym_tuple):
             if(sym_tuple is not None and antisym_tuple is None):
                 # c(ab)
                 if(sym_tuple[0] == 1 and sym_tuple[1] == 2):
-                    for c in range1(index_min, index_max):
-                        for a in range1(index_min, index_max):
-                            for b in range1(a, index_max):
+                    for c in rg1(index_min, index_max):
+                        for a in rg1(index_min, index_max):
+                            for b in rg1(a, index_max):
                                 globals()[var_name][c, a, b] = var("".join(
                                     [var_name, str(c), str(a), str(b)]))
                 # (ab)c
                 elif(sym_tuple[0] == 0 and sym_tuple[1] == 1):
-                    for a in range1(index_min, index_max):
-                        for b in range1(a, index_max):
-                            for c in range1(index_min, index_max):
+                    for a in rg1(index_min, index_max):
+                        for b in rg1(a, index_max):
+                            for c in rg1(index_min, index_max):
                                 globals()[var_name][a, b, c] = var("".join(
                                     [var_name, str(a), str(b), str(c)]))
                 else:
@@ -150,16 +154,16 @@ def set_components(var_name, n_total, sym_tuple, antisym_tuple):
             elif(sym_tuple is None and antisym_tuple is not None):
                 # c[ab]
                 if(antisym_tuple[0] == 1 and antisym_tuple[1] == 2):
-                    for c in range1(index_min, index_max):
-                        for a in range1(index_min, index_max):
-                            for b in range1(a+1, index_max):
+                    for c in rg1(index_min, index_max):
+                        for a in rg1(index_min, index_max):
+                            for b in rg1(a+1, index_max):
                                 globals()[var_name][c, a, b] = var("".join(
                                     [var_name, str(c), str(a), str(b)]))
                 # [ab]c
                 elif(antisym_tuple[0] == 0 and antisym_tuple[1] == 1):
-                    for a in range1(index_min, index_max):
-                        for b in range1(a+1, index_max):
-                            for c in range1(index_min, index_max):
+                    for a in rg1(index_min, index_max):
+                        for b in rg1(a+1, index_max):
+                            for c in rg1(index_min, index_max):
                                 globals()[var_name][a, b, c] = var("".join(
                                     [var_name, str(a), str(b), str(c)]))
                 else:
@@ -175,10 +179,10 @@ def set_components(var_name, n_total, sym_tuple, antisym_tuple):
                 if(isinstance(sym_tuple, tuple)):
                     # cd(ab)
                     if(sym_tuple[0] == 2 and sym_tuple[1] == 3):
-                        for c in range1(index_min, index_max):
-                            for d in range1(index_min, index_max):
-                                for a in range1(index_min, index_max):
-                                    for b in range1(a, index_max):
+                        for c in rg1(index_min, index_max):
+                            for d in rg1(index_min, index_max):
+                                for a in rg1(index_min, index_max):
+                                    for b in rg1(a, index_max):
                                         globals()[var_name][c, d, a, b] = var(
                                             "".join([var_name, str(c), str(d),
                                                      str(a), str(b)]))
@@ -190,10 +194,10 @@ def set_components(var_name, n_total, sym_tuple, antisym_tuple):
                     if(sym_tuple[0][0] == 0 and sym_tuple[0][1] == 1
                        and
                        sym_tuple[1][0] == 2 and sym_tuple[1][1] == 3):
-                        for c in range1(index_min, index_max):
-                            for d in range1(c, index_max):
-                                for a in range1(index_min, index_max):
-                                    for b in range1(a, index_max):
+                        for c in rg1(index_min, index_max):
+                            for d in rg1(c, index_max):
+                                for a in rg1(index_min, index_max):
+                                    for b in rg1(a, index_max):
                                         globals()[var_name][c, d, a, b] = var(
                                             "".join([var_name, str(c), str(d),
                                                      str(a), str(b)]))
@@ -208,10 +212,10 @@ def set_components(var_name, n_total, sym_tuple, antisym_tuple):
                 if(isinstance(antisym_tuple, tuple)):
                     # cd[ab]
                     if(antisym_tuple[0] == 2 and antisym_tuple[1] == 3):
-                        for c in range1(index_min, index_max):
-                            for d in range1(index_min, index_max):
-                                for a in range1(index_min, index_max):
-                                    for b in range1(a+1, index_max):
+                        for c in rg1(index_min, index_max):
+                            for d in rg1(index_min, index_max):
+                                for a in rg1(index_min, index_max):
+                                    for b in rg1(a+1, index_max):
                                         globals()[var_name][c, d, a, b] = var(
                                             "".join([var_name, str(c), str(d),
                                                      str(a), str(b)]))
@@ -223,10 +227,10 @@ def set_components(var_name, n_total, sym_tuple, antisym_tuple):
                     if(antisym_tuple[0][0] == 0 and antisym_tuple[0][1] == 1
                        and
                        antisym_tuple[1][0] == 2 and antisym_tuple[1][1] == 3):
-                        for c in range1(index_min, index_max):
-                            for d in range1(c+1, index_max):
-                                for a in range1(index_min, index_max):
-                                    for b in range1(a+1, index_max):
+                        for c in rg1(index_min, index_max):
+                            for d in rg1(c+1, index_max):
+                                for a in rg1(index_min, index_max):
+                                    for b in rg1(a+1, index_max):
                                         globals()[var_name][c, d, a, b] = var(
                                             "".join([var_name, str(c), str(d),
                                                      str(a), str(b)]))
@@ -243,10 +247,10 @@ def set_components(var_name, n_total, sym_tuple, antisym_tuple):
                     # (cd)[ab]
                     if(sym_tuple[0] == 0 and sym_tuple[1] == 1 and
                        antisym_tuple[0] == 2 and antisym_tuple[1] == 3):
-                        for c in range1(index_min, index_max):
-                            for d in range1(c, index_max):
-                                for a in range1(index_min, index_max):
-                                    for b in range1(a+1, index_max):
+                        for c in rg1(index_min, index_max):
+                            for d in rg1(c, index_max):
+                                for a in rg1(index_min, index_max):
+                                    for b in rg1(a+1, index_max):
                                         globals()[var_name][c, d, a, b] = var(
                                             "".join([var_name, str(c), str(d),
                                                      str(a), str(b)]))
