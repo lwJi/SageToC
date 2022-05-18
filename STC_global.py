@@ -16,8 +16,11 @@ dimens = None
 # manifold name
 manifd = None
 
+# map
+map_component_to_varlist = []
+
 # for simple export
-__all__ = ['dimens', 'manifd']
+__all__ = ['dimens', 'manifd', 'map_component_to_varlist']
 
 
 ####################
@@ -71,200 +74,8 @@ def define_tensor_and_set_components(absIndex_list, var_name, symmetry_list):
     define_tensors(var_name, n_contravariant, n_covariant,
                    sym_tuple, antisym_tuple)
 
-    set_components(var_name, n_total, sym_tuple, antisym_tuple)
-
-
-# set components
-def set_components(var_name, n_total, sym_tuple, antisym_tuple):
-    index_min = 0
-    index_max = 3
-
-    # scalar case
-    if(n_total == 0):
-        # globals()[var_name].add_expr(var(var_name))
-        pass
-
-    # tensor case without symmetry
-    elif(sym_tuple is None and antisym_tuple is None):
-        if(n_total == 1):
-            for a in rg1(index_min, index_max):
-                globals()[var_name][a] = var("".join([var_name, str(a)]))
-        elif(n_total == 2):
-            for a in rg1(index_min, index_max):
-                for b in rg1(index_min, index_max):
-                    globals()[var_name][a, b] = var(
-                        "".join([var_name, str(a), str(b)]))
-        elif(n_total == 3):
-            for c in rg1(index_min, index_max):
-                for a in rg1(index_min, index_max):
-                    for b in rg1(index_min, index_max):
-                        globals()[var_name][c, a, b] = var(
-                            "".join([var_name, str(c), str(a), str(b)]))
-        elif(n_total == 4):
-            for c in rg1(index_min, index_max):
-                for d in rg1(index_min, index_max):
-                    for a in rg1(index_min, index_max):
-                        for b in rg1(index_min, index_max):
-                            globals()[var_name][c, d, a, b] = var(
-                                "".join([var_name,
-                                         str(c), str(d), str(a), str(b)]))
-        else:
-            raise Exception("tensor type of %s undefined yet!!!" % var_name)
-
-    # tensor case with symmetry
-    else:
-        # two indexes case
-        if(n_total == 2):
-            # (ab)
-            if(sym_tuple is not None):
-                for a in rg1(index_min, index_max):
-                    for b in rg1(a, index_max):
-                        globals()[var_name][a, b] = var("".join(
-                            [var_name, str(a), str(b)]))
-            # [ab]
-            elif(antisym_tuple is not None):
-                for a in rg1(index_min, index_max):
-                    for b in rg1(a+1, index_max):
-                        globals()[var_name][a, b] = var("".join(
-                            [var_name, str(a), str(b)]))
-            else:
-                raise Exception("symmetry of two-index %s undefined yet!!!" %
-                                var_name)
-
-        # three indexes case
-        elif(n_total == 3):
-            if(sym_tuple is not None and antisym_tuple is None):
-                # c(ab)
-                if(sym_tuple[0] == 1 and sym_tuple[1] == 2):
-                    for c in rg1(index_min, index_max):
-                        for a in rg1(index_min, index_max):
-                            for b in rg1(a, index_max):
-                                globals()[var_name][c, a, b] = var("".join(
-                                    [var_name, str(c), str(a), str(b)]))
-                # (ab)c
-                elif(sym_tuple[0] == 0 and sym_tuple[1] == 1):
-                    for a in rg1(index_min, index_max):
-                        for b in rg1(a, index_max):
-                            for c in rg1(index_min, index_max):
-                                globals()[var_name][a, b, c] = var("".join(
-                                    [var_name, str(a), str(b), str(c)]))
-                else:
-                    raise Exception("sym of %s undefined yet!!!" %
-                                    var_name)
-            elif(sym_tuple is None and antisym_tuple is not None):
-                # c[ab]
-                if(antisym_tuple[0] == 1 and antisym_tuple[1] == 2):
-                    for c in rg1(index_min, index_max):
-                        for a in rg1(index_min, index_max):
-                            for b in rg1(a+1, index_max):
-                                globals()[var_name][c, a, b] = var("".join(
-                                    [var_name, str(c), str(a), str(b)]))
-                # [ab]c
-                elif(antisym_tuple[0] == 0 and antisym_tuple[1] == 1):
-                    for a in rg1(index_min, index_max):
-                        for b in rg1(a+1, index_max):
-                            for c in rg1(index_min, index_max):
-                                globals()[var_name][a, b, c] = var("".join(
-                                    [var_name, str(a), str(b), str(c)]))
-                else:
-                    raise Exception("antisymm of %s undefined yet!!!" %
-                                    var_name)
-            else:
-                raise Exception("symmetry of three-index %s undefined yet!!!" %
-                                var_name)
-
-        # four indexes case
-        elif(n_total == 4):
-            if(sym_tuple is not None and antisym_tuple is None):
-                if(isinstance(sym_tuple, tuple)):
-                    # cd(ab)
-                    if(sym_tuple[0] == 2 and sym_tuple[1] == 3):
-                        for c in rg1(index_min, index_max):
-                            for d in rg1(index_min, index_max):
-                                for a in rg1(index_min, index_max):
-                                    for b in rg1(a, index_max):
-                                        globals()[var_name][c, d, a, b] = var(
-                                            "".join([var_name, str(c), str(d),
-                                                     str(a), str(b)]))
-                    else:
-                        raise Exception("sym tuple of %s undefined yet!!!" %
-                                        var_name)
-                elif(isinstance(sym_tuple, list)):
-                    # (cd)(ab)
-                    if(sym_tuple[0][0] == 0 and sym_tuple[0][1] == 1
-                       and
-                       sym_tuple[1][0] == 2 and sym_tuple[1][1] == 3):
-                        for c in rg1(index_min, index_max):
-                            for d in rg1(c, index_max):
-                                for a in rg1(index_min, index_max):
-                                    for b in rg1(a, index_max):
-                                        globals()[var_name][c, d, a, b] = var(
-                                            "".join([var_name, str(c), str(d),
-                                                     str(a), str(b)]))
-                    else:
-                        raise Exception("sym list of %s undefined yet!!!" %
-                                        var_name)
-                else:
-                    raise Exception("sym of %s undefined yet!!!" %
-                                    var_name)
-
-            elif(sym_tuple is None and antisym_tuple is not None):
-                if(isinstance(antisym_tuple, tuple)):
-                    # cd[ab]
-                    if(antisym_tuple[0] == 2 and antisym_tuple[1] == 3):
-                        for c in rg1(index_min, index_max):
-                            for d in rg1(index_min, index_max):
-                                for a in rg1(index_min, index_max):
-                                    for b in rg1(a+1, index_max):
-                                        globals()[var_name][c, d, a, b] = var(
-                                            "".join([var_name, str(c), str(d),
-                                                     str(a), str(b)]))
-                    else:
-                        raise Exception("antisym tuple of %s undefined yet!!!"
-                                        % var_name)
-                elif(isinstance(antisym_tuple, list)):
-                    # [cd][ab]
-                    if(antisym_tuple[0][0] == 0 and antisym_tuple[0][1] == 1
-                       and
-                       antisym_tuple[1][0] == 2 and antisym_tuple[1][1] == 3):
-                        for c in rg1(index_min, index_max):
-                            for d in rg1(c+1, index_max):
-                                for a in rg1(index_min, index_max):
-                                    for b in rg1(a+1, index_max):
-                                        globals()[var_name][c, d, a, b] = var(
-                                            "".join([var_name, str(c), str(d),
-                                                     str(a), str(b)]))
-                    else:
-                        raise Exception("antisym list of %s undefined yet!!!" %
-                                        var_name)
-                else:
-                    raise Exception("antisym of %s undefined yet!!!"
-                                    % var_name)
-
-            elif(sym_tuple is not None and antisym_tuple is not None):
-                if(isinstance(sym_tuple, tuple) and
-                   isinstance(antisym_tuple, tuple)):
-                    # (cd)[ab]
-                    if(sym_tuple[0] == 0 and sym_tuple[1] == 1 and
-                       antisym_tuple[0] == 2 and antisym_tuple[1] == 3):
-                        for c in rg1(index_min, index_max):
-                            for d in rg1(c, index_max):
-                                for a in rg1(index_min, index_max):
-                                    for b in rg1(a+1, index_max):
-                                        globals()[var_name][c, d, a, b] = var(
-                                            "".join([var_name, str(c), str(d),
-                                                     str(a), str(b)]))
-                else:
-                    raise Exception("mixed symmetry of %s undefined yet!!!" %
-                                    var_name)
-
-            else:
-                raise Exception("symmetry of four-index %s undefined yet!!!" %
-                                var_name)
-
-        # other num of indexes case
-        else:
-            raise Exception("symmetry of %s undefined yet!!!" % var_name)
+    manipulate_components("set components",
+                          var_name, n_total, sym_tuple, antisym_tuple)
 
 
 # define tensors
@@ -283,3 +94,198 @@ def define_tensors(var_name, n_contravariant, n_covariant,
 
     # add to export list
     __all__.append(var_name)
+
+
+def set_component_and_add_to_map(var_name, a, b, c, d):
+    index_list = [index for index in [a, b, c, d] if index is not None]
+    index_tuple = tuple(index_list)
+    fullname = [name for namelist in
+                [[var_name], [str(index) for index in index_list]]
+                for name in namelist]
+    if(a is None):
+        # globals()[var_name].add_expr(var(var_name))
+        pass
+    else:
+        globals()[var_name][index_tuple] = var("".join(fullname))
+
+
+def manipulate_component(mode, var_name, a=None, b=None, c=None, d=None):
+    set_component_and_add_to_map(var_name, a, b, c, d)
+
+
+# manipulate components
+def manipulate_components(mode, var_name, n_total, sym_tuple, antisym_tuple):
+    index_min = 0
+    index_max = 3
+
+    # scalar case
+    if(n_total == 0):
+        # globals()[var_name].add_expr(var(var_name))
+        pass
+
+    # tensor case without symmetry
+    elif(sym_tuple is None and antisym_tuple is None):
+        if(n_total == 1):
+            for a in rg1(index_min, index_max):
+                manipulate_component(mode, var_name, a)
+        elif(n_total == 2):
+            for a in rg1(index_min, index_max):
+                for b in rg1(index_min, index_max):
+                    manipulate_component(mode, var_name, a, b)
+        elif(n_total == 3):
+            for c in rg1(index_min, index_max):
+                for a in rg1(index_min, index_max):
+                    for b in rg1(index_min, index_max):
+                        manipulate_component(mode, var_name, c, a, b)
+        elif(n_total == 4):
+            for c in rg1(index_min, index_max):
+                for d in rg1(index_min, index_max):
+                    for a in rg1(index_min, index_max):
+                        for b in rg1(index_min, index_max):
+                            manipulate_component(mode, var_name, c, d, a, b)
+        else:
+            raise Exception("tensor type of %s undefined yet!!!" % var_name)
+
+    # tensor case with symmetry
+    else:
+        # two indexes case
+        if(n_total == 2):
+            # (ab)
+            if(sym_tuple is not None):
+                for a in rg1(index_min, index_max):
+                    for b in rg1(a, index_max):
+                        manipulate_component(mode, var_name, a, b)
+            # [ab]
+            elif(antisym_tuple is not None):
+                for a in rg1(index_min, index_max):
+                    for b in rg1(a+1, index_max):
+                        manipulate_component(mode, var_name, a, b)
+            else:
+                raise Exception("symmetry of two-index %s undefined yet!!!" %
+                                var_name)
+
+        # three indexes case
+        elif(n_total == 3):
+            if(sym_tuple is not None and antisym_tuple is None):
+                # c(ab)
+                if(sym_tuple[0] == 1 and sym_tuple[1] == 2):
+                    for c in rg1(index_min, index_max):
+                        for a in rg1(index_min, index_max):
+                            for b in rg1(a, index_max):
+                                manipulate_component(mode, var_name, c, a, b)
+                # (ab)c
+                elif(sym_tuple[0] == 0 and sym_tuple[1] == 1):
+                    for a in rg1(index_min, index_max):
+                        for b in rg1(a, index_max):
+                            for c in rg1(index_min, index_max):
+                                manipulate_component(mode, var_name, a, b, c)
+                else:
+                    raise Exception("sym of %s undefined yet!!!" %
+                                    var_name)
+            elif(sym_tuple is None and antisym_tuple is not None):
+                # c[ab]
+                if(antisym_tuple[0] == 1 and antisym_tuple[1] == 2):
+                    for c in rg1(index_min, index_max):
+                        for a in rg1(index_min, index_max):
+                            for b in rg1(a+1, index_max):
+                                manipulate_component(mode, var_name, c, a, b)
+                # [ab]c
+                elif(antisym_tuple[0] == 0 and antisym_tuple[1] == 1):
+                    for a in rg1(index_min, index_max):
+                        for b in rg1(a+1, index_max):
+                            for c in rg1(index_min, index_max):
+                                manipulate_component(mode, var_name, a, b, c)
+                else:
+                    raise Exception("antisymm of %s undefined yet!!!" %
+                                    var_name)
+            else:
+                raise Exception("symmetry of three-index %s undefined yet!!!" %
+                                var_name)
+
+        # four indexes case
+        elif(n_total == 4):
+            if(sym_tuple is not None and antisym_tuple is None):
+                if(isinstance(sym_tuple, tuple)):
+                    # cd(ab)
+                    if(sym_tuple[0] == 2 and sym_tuple[1] == 3):
+                        for c in rg1(index_min, index_max):
+                            for d in rg1(index_min, index_max):
+                                for a in rg1(index_min, index_max):
+                                    for b in rg1(a, index_max):
+                                        manipulate_component(mode, var_name,
+                                                             c, d, a, b)
+                    else:
+                        raise Exception("sym tuple of %s undefined yet!!!" %
+                                        var_name)
+                elif(isinstance(sym_tuple, list)):
+                    # (cd)(ab)
+                    if(sym_tuple[0][0] == 0 and sym_tuple[0][1] == 1
+                       and
+                       sym_tuple[1][0] == 2 and sym_tuple[1][1] == 3):
+                        for c in rg1(index_min, index_max):
+                            for d in rg1(c, index_max):
+                                for a in rg1(index_min, index_max):
+                                    for b in rg1(a, index_max):
+                                        manipulate_component(mode, var_name,
+                                                             c, d, a, b)
+                    else:
+                        raise Exception("sym list of %s undefined yet!!!" %
+                                        var_name)
+                else:
+                    raise Exception("sym of %s undefined yet!!!" %
+                                    var_name)
+
+            elif(sym_tuple is None and antisym_tuple is not None):
+                if(isinstance(antisym_tuple, tuple)):
+                    # cd[ab]
+                    if(antisym_tuple[0] == 2 and antisym_tuple[1] == 3):
+                        for c in rg1(index_min, index_max):
+                            for d in rg1(index_min, index_max):
+                                for a in rg1(index_min, index_max):
+                                    for b in rg1(a+1, index_max):
+                                        manipulate_component(mode, var_name,
+                                                             c, d, a, b)
+                    else:
+                        raise Exception("antisym tuple of %s undefined yet!!!"
+                                        % var_name)
+                elif(isinstance(antisym_tuple, list)):
+                    # [cd][ab]
+                    if(antisym_tuple[0][0] == 0 and antisym_tuple[0][1] == 1
+                       and
+                       antisym_tuple[1][0] == 2 and antisym_tuple[1][1] == 3):
+                        for c in rg1(index_min, index_max):
+                            for d in rg1(c+1, index_max):
+                                for a in rg1(index_min, index_max):
+                                    for b in rg1(a+1, index_max):
+                                        manipulate_component(mode, var_name,
+                                                             c, d, a, b)
+                    else:
+                        raise Exception("antisym list of %s undefined yet!!!" %
+                                        var_name)
+                else:
+                    raise Exception("antisym of %s undefined yet!!!"
+                                    % var_name)
+
+            elif(sym_tuple is not None and antisym_tuple is not None):
+                if(isinstance(sym_tuple, tuple) and
+                   isinstance(antisym_tuple, tuple)):
+                    # (cd)[ab]
+                    if(sym_tuple[0] == 0 and sym_tuple[1] == 1 and
+                       antisym_tuple[0] == 2 and antisym_tuple[1] == 3):
+                        for c in rg1(index_min, index_max):
+                            for d in rg1(c, index_max):
+                                for a in rg1(index_min, index_max):
+                                    for b in rg1(a+1, index_max):
+                                        manipulate_component(mode, var_name,
+                                                             c, d, a, b)
+                else:
+                    raise Exception("mixed symmetry of %s undefined yet!!!" %
+                                    var_name)
+
+            else:
+                raise Exception("symmetry of four-index %s undefined yet!!!" %
+                                var_name)
+
+        # other num of indexes case
+        else:
+            raise Exception("symmetry of %s undefined yet!!!" % var_name)
