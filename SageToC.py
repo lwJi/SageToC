@@ -58,4 +58,4 @@ def read_varlist(varlist):
         # add to var list
 
         # define Sage_tensor
-        Sg.set_tensor(absIndex_list, name, symmetry_list)
+        Sg.define_tensor_and_set_components(absIndex_list, name, symmetry_list)

@@ -20,19 +20,8 @@ def range1(start, end):
     return range(start, end+1)
 
 
-# set component
-def STC_set_component(var_name, a=None, b=None, c=None, d=None):
-    # vector case
-    if(b is None):
-        comp_name = "".join([var_name, str(a)])
-        var(comp_name)
-        globals()[var_name][a, b, c, d] = var(comp_name)
-
-    # two indexes case
-
-
 # set tensors
-def set_tensor(absIndex_list, var_name, symmetry_list):
+def define_tensor_and_set_components(absIndex_list, var_name, symmetry_list):
     index_min = 0
     index_max = 3
     n_covariant = 0
@@ -46,10 +35,12 @@ def set_tensor(absIndex_list, var_name, symmetry_list):
             else:
                 n_contravariant += 1
     n_total = n_contravariant+n_covariant
+    # print("n = ", n_contravariant, " + ", n_covariant, " = ", n_total)
 
     # ===========
     # scalar case
     # ===========
+    # define tensor and set components
     if(n_total == 0):
         globals()[var_name] = manifd.scalar_field(var(var_name), name=var_name)
 
@@ -274,8 +265,34 @@ def set_tensor(absIndex_list, var_name, symmetry_list):
     # tensor case without symmetry
     # ============================
     else:
+        # define tenosr
         globals()[var_name] = manifd.tensor_field(n_contravariant, n_covariant,
                                                   name=var_name)
+        # set components
+        if(n_total == 1):
+            for a in range1(index_min, index_max):
+                globals()[var_name][a] = var("".join([var_name, str(a)]))
+        elif(n_total == 2):
+            for a in range1(index_min, index_max):
+                for b in range1(index_min, index_max):
+                    globals()[var_name][a, b] = var(
+                        "".join([var_name, str(a), str(b)]))
+        elif(n_total == 3):
+            for c in range1(index_min, index_max):
+                for a in range1(index_min, index_max):
+                    for b in range1(index_min, index_max):
+                        globals()[var_name][c, a, b] = var(
+                            "".join([var_name, str(c), str(a), str(b)]))
+        elif(n_total == 4):
+            for c in range1(index_min, index_max):
+                for d in range1(index_min, index_max):
+                    for a in range1(index_min, index_max):
+                        for b in range1(index_min, index_max):
+                            globals()[var_name][c, d, a, b] = var(
+                                "".join([var_name,
+                                         str(c), str(d), str(a), str(b)]))
+        else:
+            raise Exception("tensor type of %s undefined yet!!!" % var_name)
 
     # add to export list
     __all__.append(var_name)
