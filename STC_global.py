@@ -22,12 +22,10 @@ def range1(start, end):
 
 # set tensors
 def define_tensor_and_set_components(absIndex_list, var_name, symmetry_list):
-    index_min = 0
-    index_max = 3
-    n_covariant = 0
-    n_contravariant = 0
 
     # set n_convariant and n_contravariant
+    n_covariant = 0
+    n_contravariant = 0
     if(absIndex_list is not None):
         for index in absIndex_list:
             if '-' in index:
@@ -37,21 +35,11 @@ def define_tensor_and_set_components(absIndex_list, var_name, symmetry_list):
     n_total = n_contravariant+n_covariant
     # print("n = ", n_contravariant, " + ", n_covariant, " = ", n_total)
 
-    # ===========
-    # scalar case
-    # ===========
-    # define tensor and set components
-    if(n_total == 0):
-        globals()[var_name] = manifd.scalar_field(var(var_name), name=var_name)
-
-    # =========================
-    # tensor case with symmetry
-    # =========================
-    elif(symmetry_list is not None):
-        # set sym_typle and antisym_tuple
-        sym_tuple = None
-        antisym_tuple = None
-        if(len(symmetry_list) <= 2):
+    # set sym_tuple and antisym_tuple
+    sym_tuple = None
+    antisym_tuple = None
+    if(symmetry_list is not None):
+        if(len(symmetry_list) < 3):
             # go over different types of symmetries
             for symmetry in symmetry_list:
                 symmetry_type = symmetry.split('[')[0]
@@ -76,15 +64,52 @@ def define_tensor_and_set_components(absIndex_list, var_name, symmetry_list):
             raise Exception("symmetry type of %s undefined yet!!!" % var_name)
         # print("sym_tuple = ", sym_tuple, " antisym_tuple = ", antisym_tuple)
 
-        # define tensor
-        globals()[var_name] = manifd.tensor_field(
-            n_contravariant, n_covariant, name=var_name,
-            sym=sym_tuple, antisym=antisym_tuple)
+    define_tensors(var_name, n_contravariant, n_covariant,
+                   sym_tuple, antisym_tuple)
 
-        # set components
-        # ----------------
+    set_components(var_name, n_total, sym_tuple, antisym_tuple)
+
+
+# set components
+def set_components(var_name, n_total, sym_tuple, antisym_tuple):
+    index_min = 0
+    index_max = 3
+
+    # scalar case
+    if(n_total == 0):
+        # globals()[var_name].add_expr(var(var_name))
+        pass
+
+    # tensor case without symmetry
+    elif(sym_tuple is None and antisym_tuple is None):
+        if(n_total == 1):
+            for a in range1(index_min, index_max):
+                globals()[var_name][a] = var("".join([var_name, str(a)]))
+        elif(n_total == 2):
+            for a in range1(index_min, index_max):
+                for b in range1(index_min, index_max):
+                    globals()[var_name][a, b] = var(
+                        "".join([var_name, str(a), str(b)]))
+        elif(n_total == 3):
+            for c in range1(index_min, index_max):
+                for a in range1(index_min, index_max):
+                    for b in range1(index_min, index_max):
+                        globals()[var_name][c, a, b] = var(
+                            "".join([var_name, str(c), str(a), str(b)]))
+        elif(n_total == 4):
+            for c in range1(index_min, index_max):
+                for d in range1(index_min, index_max):
+                    for a in range1(index_min, index_max):
+                        for b in range1(index_min, index_max):
+                            globals()[var_name][c, d, a, b] = var(
+                                "".join([var_name,
+                                         str(c), str(d), str(a), str(b)]))
+        else:
+            raise Exception("tensor type of %s undefined yet!!!" % var_name)
+
+    # tensor case with symmetry
+    else:
         # two indexes case
-        # ----------------
         if(n_total == 2):
             # (ab)
             if(sym_tuple is not None):
@@ -102,9 +127,7 @@ def define_tensor_and_set_components(absIndex_list, var_name, symmetry_list):
                 raise Exception("symmetry of two-index %s undefined yet!!!" %
                                 var_name)
 
-        # ------------------
         # three indexes case
-        # ------------------
         elif(n_total == 3):
             if(sym_tuple is not None and antisym_tuple is None):
                 # c(ab)
@@ -146,23 +169,12 @@ def define_tensor_and_set_components(absIndex_list, var_name, symmetry_list):
                 raise Exception("symmetry of three-index %s undefined yet!!!" %
                                 var_name)
 
-        # -----------------
         # four indexes case
-        # -----------------
         elif(n_total == 4):
             if(sym_tuple is not None and antisym_tuple is None):
                 if(isinstance(sym_tuple, tuple)):
-                    # (ab)cd
-                    if(sym_tuple[0] == 0 and sym_tuple[1] == 1):
-                        for a in range1(index_min, index_max):
-                            for b in range1(a, index_max):
-                                for c in range1(index_min, index_max):
-                                    for d in range1(index_min, index_max):
-                                        globals()[var_name][a, b, c, d] = var(
-                                            "".join([var_name, str(a), str(b),
-                                                     str(c), str(d)]))
                     # cd(ab)
-                    elif(sym_tuple[0] == 2 and sym_tuple[1] == 3):
+                    if(sym_tuple[0] == 2 and sym_tuple[1] == 3):
                         for c in range1(index_min, index_max):
                             for d in range1(index_min, index_max):
                                 for a in range1(index_min, index_max):
@@ -194,17 +206,8 @@ def define_tensor_and_set_components(absIndex_list, var_name, symmetry_list):
 
             elif(sym_tuple is None and antisym_tuple is not None):
                 if(isinstance(antisym_tuple, tuple)):
-                    # [ab]cd
-                    if(antisym_tuple[0] == 0 and antisym_tuple[1] == 1):
-                        for a in range1(index_min, index_max):
-                            for b in range1(a+1, index_max):
-                                for c in range1(index_min, index_max):
-                                    for d in range1(index_min, index_max):
-                                        globals()[var_name][a, b, c, d] = var(
-                                            "".join([var_name, str(a), str(b),
-                                                     str(c), str(d)]))
                     # cd[ab]
-                    elif(antisym_tuple[0] == 2 and antisym_tuple[1] == 3):
+                    if(antisym_tuple[0] == 2 and antisym_tuple[1] == 3):
                         for c in range1(index_min, index_max):
                             for d in range1(index_min, index_max):
                                 for a in range1(index_min, index_max):
@@ -255,44 +258,24 @@ def define_tensor_and_set_components(absIndex_list, var_name, symmetry_list):
                 raise Exception("symmetry of four-index %s undefined yet!!!" %
                                 var_name)
 
-        # -----------
-        # other cases
-        # -----------
+        # other num of indexes case
         else:
             raise Exception("symmetry of %s undefined yet!!!" % var_name)
 
-    # ============================
-    # tensor case without symmetry
-    # ============================
+
+# define tensors
+def define_tensors(var_name, n_contravariant, n_covariant,
+                   sym_tuple=None, antisym_tuple=None):
+
+    # scalar case
+    if(n_contravariant+n_covariant == 0):
+        # globals()[var_name] = manifd.scalar_field(name=var_name)
+        globals()[var_name] = manifd.scalar_field(var(var_name), name=var_name)
+    # tensor case
     else:
-        # define tenosr
-        globals()[var_name] = manifd.tensor_field(n_contravariant, n_covariant,
-                                                  name=var_name)
-        # set components
-        if(n_total == 1):
-            for a in range1(index_min, index_max):
-                globals()[var_name][a] = var("".join([var_name, str(a)]))
-        elif(n_total == 2):
-            for a in range1(index_min, index_max):
-                for b in range1(index_min, index_max):
-                    globals()[var_name][a, b] = var(
-                        "".join([var_name, str(a), str(b)]))
-        elif(n_total == 3):
-            for c in range1(index_min, index_max):
-                for a in range1(index_min, index_max):
-                    for b in range1(index_min, index_max):
-                        globals()[var_name][c, a, b] = var(
-                            "".join([var_name, str(c), str(a), str(b)]))
-        elif(n_total == 4):
-            for c in range1(index_min, index_max):
-                for d in range1(index_min, index_max):
-                    for a in range1(index_min, index_max):
-                        for b in range1(index_min, index_max):
-                            globals()[var_name][c, d, a, b] = var(
-                                "".join([var_name,
-                                         str(c), str(d), str(a), str(b)]))
-        else:
-            raise Exception("tensor type of %s undefined yet!!!" % var_name)
+        globals()[var_name] = manifd.tensor_field(
+            n_contravariant, n_covariant, name=var_name,
+            sym=sym_tuple, antisym=antisym_tuple)
 
     # add to export list
     __all__.append(var_name)
