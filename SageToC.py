@@ -26,7 +26,7 @@ map_component_to_varlist = []
 bool_new_varlist = True
 
 # grid index
-grid_point_index = "_ijk_"
+grid_index = "_ijk_"
 
 # for simple export
 __all__ = []
@@ -203,7 +203,7 @@ def set_component_and_register_to_indexmap(mode, var_name, index_list):
     if(mode.value == mmode.set_comp_temp.value):
         fullname = comp_name
     else:
-        fullname = "".join([comp_name, grid_point_index])
+        fullname = "".join([comp_name, grid_index])
 
     if(len(map_component_to_varlist) == 0 or
        bool_new_varlist or  # for 'continuous varlist index case'
