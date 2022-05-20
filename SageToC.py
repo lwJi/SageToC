@@ -1,8 +1,8 @@
 # STC_global.py
 # (c) Liwei Ji 05/2022
 
-import re
 from sage.calculus.var import var
+import misc_functions as mf
 from misc_functions import range1 as rg1
 from misc_functions import ManipulateMode as mmode
 
@@ -45,7 +45,7 @@ class Varlist:
         for var_info in self.varlist:
             # get var infos
             [var_name, n_contravariant, n_covariant,
-             sym_tuple, antisym_tuple] = get_var_infos(var_info)
+             sym_tuple, antisym_tuple] = mf.get_details(var_info)
             n_total = n_contravariant + n_covariant
             self.varlist_info.append([var_name, n_total,
                                       sym_tuple, antisym_tuple])
@@ -426,67 +426,3 @@ def manipulate_components(mode, var_name, n_total, sym_tuple, antisym_tuple):
         # other num of indexes case
         else:
             raise Exception("symmetry of %s undefined yet!!!" % var_name)
-
-
-# get var_name, n_contravariant, n_covariant, sym_tuple, anitsym_tuple
-# notice the sym_tuple and antisym_tuple can be lists
-def get_var_infos(var):
-    var_info = var.split(', ')
-    # get var_name
-    var_name = var_info[0].split('[')[0]
-    # get absIndex_list
-    absIndex = re.search(r'\[.*?\]', var_info[0]).group(0).strip('[]')
-    absIndex_list = None
-    if(len(absIndex) > 0):
-        absIndex_list = absIndex.split(',')
-    # get symmetry_list
-    if(len(var_info) == 1):
-        symmetry_list = None
-    elif(len(var_info) == 2):
-        symmetry_list = [var_info[1]]
-    elif(len(var_info) == 3):
-        symmetry_list = [var_info[1], var_info[2]]
-    else:
-        raise Exception("symmetry_list of %s undefined yet!!!" % var)
-
-    # set n_convariant and n_contravariant
-    n_contravariant = 0
-    n_covariant = 0
-    if(absIndex_list is not None):
-        for index in absIndex_list:
-            if '-' in index:
-                n_covariant += 1
-            else:
-                n_contravariant += 1
-    # n_total = n_contravariant+n_covariant
-    # print("n = ", n_contravariant, " + ", n_covariant, " = ", n_total)
-    # set sym_tuple and antisym_tuple
-    sym_tuple = None
-    antisym_tuple = None
-    if(symmetry_list is not None):
-        if(len(symmetry_list) < 3):
-            # go over different types of symmetries
-            for symmetry in symmetry_list:
-                symmetry_type = symmetry.split('[')[0]
-                # go over different groups of same type of symmetry
-                for sublist in re.findall(r'\{.*?\}', symmetry):
-                    symmetry_indexlist = sublist.strip('{}').split(',')
-                    if(symmetry_type == 'sym'):
-                        if(sym_tuple is not None):
-                            sym_tuple = [sym_tuple, tuple(
-                                [int(i) for i in symmetry_indexlist])]
-                        else:
-                            sym_tuple = tuple(
-                                [int(i) for i in symmetry_indexlist])
-                    if(symmetry_type == 'antisym'):
-                        if(antisym_tuple is not None):
-                            antisym_tuple = [antisym_tuple, tuple(
-                                [int(i) for i in symmetry_indexlist])]
-                        else:
-                            antisym_tuple = tuple(
-                                [int(i) for i in symmetry_indexlist])
-        else:
-            raise Exception("symmetry type of %s undefined yet!!!" % var_name)
-        # print("sym_tuple = ", sym_tuple, " antisym_tuple = ", antisym_tuple)
-
-    return [var_name, n_contravariant, n_covariant, sym_tuple, antisym_tuple]
