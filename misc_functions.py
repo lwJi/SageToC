@@ -30,24 +30,36 @@ def range1(start, end):
     return range(start, end+1)
 
 
+# add prefix to the var name
+def prefix_of(var, value):
+    delim_info = ', '
+    delim_name = '['
+    var_infos = var.split(delim_info)
+    var_names = var_infos[0].split(delim_name)
+    var_names[0] = "".join([value, var_names[0]])
+    var_infos[0] = delim_name.join([var_names[0], var_names[1]])
+    return delim_info.join(
+        [v for vlist in [[var_infos[0]], var_infos[1:]] for v in vlist])
+
+
 # get var_name, n_contravariant, n_covariant, sym_tuple, anitsym_tuple
 # notice the sym_tuple and antisym_tuple can be lists
 def get_details(var):
-    var_info = var.split(', ')
+    var_infos = var.split(', ')
     # get var_name
-    var_name = var_info[0].split('[')[0]
+    var_name = var_infos[0].split('[')[0]
     # get absIndex_list
-    absIndex = re.search(r'\[.*?\]', var_info[0]).group(0).strip('[]')
+    absIndex = re.search(r'\[.*?\]', var_infos[0]).group(0).strip('[]')
     absIndex_list = None
     if(len(absIndex) > 0):
         absIndex_list = absIndex.split(',')
     # get symmetry_list
-    if(len(var_info) == 1):
+    if(len(var_infos) == 1):
         symmetry_list = None
-    elif(len(var_info) == 2):
-        symmetry_list = [var_info[1]]
-    elif(len(var_info) == 3):
-        symmetry_list = [var_info[1], var_info[2]]
+    elif(len(var_infos) == 2):
+        symmetry_list = [var_infos[1]]
+    elif(len(var_infos) == 3):
+        symmetry_list = [var_infos[1], var_infos[2]]
     else:
         raise Exception("symmetry_list of %s undefined yet!!!" % var)
 
