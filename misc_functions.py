@@ -25,82 +25,99 @@ class ManipulateMode(enum.Enum):
     print_comp_eqn_primary_with_suffix = enum.auto()
 
 
-# redefine range
-def range1(start, end):
-    return range(start, end+1)
+###########
+# classes #
+###########
 
+class VarLine:
 
-# add prefix to the var name
-def prefix_of(var, value):
-    delim_info = ', '
-    delim_name = '['
-    var_infos = var.split(delim_info)
-    var_names = var_infos[0].split(delim_name)
-    var_names[0] = "".join([value, var_names[0]])
-    var_infos[0] = delim_name.join([var_names[0], var_names[1]])
-    return delim_info.join(
-        [v for vlist in [[var_infos[0]], var_infos[1:]] for v in vlist])
+    def __init__(self, var):
+        self.delim_info = ', '
+        self.delim_name = '['
+        # main variables
+        self.infos = var.split(self.delim_info)
+        self.names = self.infos[0].split(self.delim_name)
 
-
-# get var_name, n_contravariant, n_covariant, sym_tuple, anitsym_tuple
-# notice the sym_tuple and antisym_tuple can be lists
-def get_details(var):
-    var_infos = var.split(', ')
-    # get var_name
-    var_name = var_infos[0].split('[')[0]
-    # get absIndex_list
-    absIndex = re.search(r'\[.*?\]', var_infos[0]).group(0).strip('[]')
-    absIndex_list = None
-    if(len(absIndex) > 0):
-        absIndex_list = absIndex.split(',')
-    # get symmetry_list
-    if(len(var_infos) == 1):
-        symmetry_list = None
-    elif(len(var_infos) == 2):
-        symmetry_list = [var_infos[1]]
-    elif(len(var_infos) == 3):
-        symmetry_list = [var_infos[1], var_infos[2]]
-    else:
-        raise Exception("symmetry_list of %s undefined yet!!!" % var)
-
-    # set n_convariant and n_contravariant
-    n_contravariant = 0
-    n_covariant = 0
-    if(absIndex_list is not None):
-        for index in absIndex_list:
+    def get_details(self):
+        # interface
+        name = self.names[0]
+        n_contravariant = 0
+        n_covariant = 0
+        sym_tuple = None
+        antisym_tuple = None
+        # temp variables
+        aIndex_list = []
+        symm_list = []
+        # get abstract index list
+        aIndex = re.search(r'\[.*?\]', self.infos[0]).group(0).strip('[]')
+        if(len(aIndex) > 0):
+            aIndex_list = aIndex.split(',')
+        # get symmetry list
+        if(len(self.infos) == 1):
+            pass
+        elif(len(self.infos) == 2):
+            symm_list = [self.infos[1]]
+        elif(len(self.infos) == 3):
+            symm_list = [self.infos[1], self.infos[2]]
+        else:
+            raise Exception("symm_list of %s undefined yet!!!" % name)
+        # set n_covariant and n_contravariant
+        for index in aIndex_list:
             if '-' in index:
                 n_covariant += 1
             else:
                 n_contravariant += 1
-    # n_total = n_contravariant+n_covariant
-    # print("n = ", n_contravariant, " + ", n_covariant, " = ", n_total)
-    # set sym_tuple and antisym_tuple
-    sym_tuple = None
-    antisym_tuple = None
-    if(symmetry_list is not None):
-        if(len(symmetry_list) < 3):
+        # set sym_tuple and antisym_tuple
+        if(len(symm_list) == 0):
+            pass
+        elif(len(symm_list) < 3):
             # go over different types of symmetries
-            for symmetry in symmetry_list:
+            for symmetry in symm_list:
                 symmetry_type = symmetry.split('[')[0]
                 # go over different groups of same type of symmetry
                 for sublist in re.findall(r'\{.*?\}', symmetry):
                     symmetry_indexlist = sublist.strip('{}').split(',')
                     if(symmetry_type == 'sym'):
-                        if(sym_tuple is not None):
-                            sym_tuple = [sym_tuple, tuple(
-                                [int(i) for i in symmetry_indexlist])]
-                        else:
+                        if(sym_tuple is None):
                             sym_tuple = tuple(
                                 [int(i) for i in symmetry_indexlist])
-                    if(symmetry_type == 'antisym'):
-                        if(antisym_tuple is not None):
-                            antisym_tuple = [antisym_tuple, tuple(
-                                [int(i) for i in symmetry_indexlist])]
                         else:
+                            if(isinstance(sym_tuple, list)):
+                                sym_tuple.append(tuple(
+                                    [int(i) for i in symmetry_indexlist]))
+                            else:
+                                sym_tuple = [sym_tuple, tuple(
+                                    [int(i) for i in symmetry_indexlist])]
+                    if(symmetry_type == 'antisym'):
+                        if(antisym_tuple is None):
                             antisym_tuple = tuple(
                                 [int(i) for i in symmetry_indexlist])
+                        else:
+                            if(isinstance(antisym_tuple, list)):
+                                antisym_tuple.append(tuple(
+                                    [int(i) for i in symmetry_indexlist]))
+                            else:
+                                antisym_tuple = [
+                                    antisym_tuple, tuple(
+                                        [int(i) for i in symmetry_indexlist])]
         else:
-            raise Exception("symmetry type of %s undefined yet!!!" % var_name)
-        # print("sym_tuple = ", sym_tuple, " antisym_tuple = ", antisym_tuple)
+            raise Exception("symmetry type of %s undefined yet!!!" % name)
+            # print("sym_tuple = ", sym_tuple,
+            #       " antisym_tuple = ", antisym_tuple)
 
-    return [var_name, n_contravariant, n_covariant, sym_tuple, antisym_tuple]
+        return [name, n_contravariant, n_covariant, sym_tuple, antisym_tuple]
+
+    def prefix_of(self, value):
+        var_name = "".join([value, self.names[0]])
+        fullname = self.delim_name.join([var_name, self.names[1]])
+        return self.delim_info.join(
+            [v for vlist in [[fullname], self.infos[1:]] for v in vlist])
+
+
+#############
+# functions #
+#############
+
+# redefine range
+def range1(start, end):
+    return range(start, end+1)

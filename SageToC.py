@@ -5,7 +5,6 @@ from sage.calculus.var import var
 import misc_functions as mf
 from misc_functions import range1 as rg1
 from misc_functions import ManipulateMode as mmode
-from misc_functions import prefix_of
 
 print('Welcome to SageToC (a code generator)')
 
@@ -41,13 +40,12 @@ class Varlist:
 
     def __init__(self, varlist):
         self.varlist = varlist
-        self.dt_varlist = []
         self.varlist_info = []
         # define tensor
         for var_info in self.varlist:
             # get var infos
             [var_name, n_contravariant, n_covariant,
-             sym_tuple, antisym_tuple] = mf.get_details(var_info)
+             sym_tuple, antisym_tuple] = mf.VarLine(var_info).get_details()
             n_total = n_contravariant + n_covariant
             self.varlist_info.append([var_name, n_total,
                                       sym_tuple, antisym_tuple])
@@ -76,10 +74,10 @@ class Varlist:
                 self.getSym_tuple(i), self.getAntisym_tuple(i))
 
     def prefix(self, value, mode=None):
-        self.dt_varlist = []
+        dt_varlist = []
         for var_info in self.varlist:
-            self.dt_varlist.append(prefix_of(var_info, value))
-        return dtEvolutionVarlist(self.dt_varlist, mode)
+            dt_varlist.append(mf.VarLine(var_info).prefix_of(value))
+        return dtEvolutionVarlist(dt_varlist, mode)
 
 
 class EvolutionVarlist(Varlist):
