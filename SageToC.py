@@ -26,7 +26,17 @@ map_component_to_varlist = []
 bool_new_varlist = True
 
 # grid index
-grid_index = "_ijk_"
+grid_index = "[ijk]"
+
+# dt prefix
+prefix_of_dt = "dt"
+# suffix of rhs name when there is a if statement
+suffix_of_rhs = ""
+
+# output filename
+project = "Project"
+cfilename = "output.c"
+
 
 # for simple export
 __all__ = []
@@ -44,11 +54,11 @@ class Varlist:
         # define tensor
         for var_info in self.varlist:
             # get var infos
-            [var_name, n_contravariant, n_covariant,
-             sym_tuple, antisym_tuple] = mf.VarLine(var_info).get_details()
+            [var_name, n_contravariant, n_covariant, sym_tuple, antisym_tuple,
+             aIndex_list] = mf.VarLine(var_info).get_details()
             n_total = n_contravariant + n_covariant
             self.varlist_info.append([var_name, n_total,
-                                      sym_tuple, antisym_tuple])
+                                      sym_tuple, antisym_tuple, aIndex_list])
             # define Sage tensor
             define_tensors(var_name, n_contravariant, n_covariant,
                            sym_tuple, antisym_tuple)
@@ -66,15 +76,30 @@ class Varlist:
     def getAntisym_tuple(self, i):
         return self.varlist_info[i][3]
 
-    def maniComponents(self, mode):
+    def getaIndex_list(self, i):
+        return self.varlist_info[i][4]
+
+    def maniComponents(self, mode, suffix=None):
         print("mode = ", mode.name)
+        # consider suffix
+        if(suffix is not None):
+            global suffix_of_rhs
+            suffix_of_rhs = suffix
+        # reset bool_new_varlist
+        global bool_new_varlist
+        bool_new_varlist = True
+        # manipulate vars: set/print
         for i in range(len(self.varlist)):
             manipulate_components(
                 mode, self.getVar_name(i), self.getN_total(i),
-                self.getSym_tuple(i), self.getAntisym_tuple(i))
+                self.getSym_tuple(i), self.getAntisym_tuple(i),
+                self.getaIndex_list(i))
 
-    def prefix(self, value, mode=None):
+    def prefix(self, value=None, mode=None):
         dt_varlist = []
+        if(value is None):
+            value = prefix_of_dt
+        # construct list of vars with prefix 'value'
         for var_info in self.varlist:
             dt_varlist.append(mf.VarLine(var_info).prefix_of(value))
         return dtEvolutionVarlist(dt_varlist, mode)
@@ -105,10 +130,10 @@ class dtEvolutionVarlist(Varlist):
             mode = mmode.print_comp_init_vlr_independent
         self.maniComponents(mode)
 
-    def printEqn(self, mode=None):
+    def printEqn(self, suffix=None, mode=None):
         if(mode is None):
             mode = mmode.print_comp_eqn_primary
-        self.maniComponents(mode)
+        self.maniComponents(mode, suffix)
 
 
 class MoreInputVarlist(Varlist):
@@ -136,10 +161,10 @@ class MoreOutputVarlist(Varlist):
             mode = mmode.print_comp_init_more_input_output
         self.maniComponents(mode)
 
-    def printEqn(self, mode=None):
+    def printEqn(self, suffix=None, mode=None):
         if(mode is None):
             mode = mmode.print_comp_eqn_primary
-        self.maniComponents(mode)
+        self.maniComponents(mode, suffix)
 
 
 class TemporaryVarlist(Varlist):
@@ -149,67 +174,85 @@ class TemporaryVarlist(Varlist):
             mode = mmode.set_comp_temp
         self.maniComponents(mode)
 
-    def printEqn(self, mode=None):
+    def printEqn(self, suffix=None, mode=None):
         if(mode is None):
             mode = mmode.print_comp_eqn_temp
-        self.maniComponents(mode)
+        self.maniComponents(mode, suffix)
 
 
 ####################
 # global functions #
 ####################
 
-# should be put in Codes/app.py
-def print_component_initialization(mode, var_name, index_list):
-    if(mode.value == mmode.print_comp_init_vlr_independent.value):
-        print("print component initialization for vlr using indep index, %s!",
-              var_name)
-    elif(mode.value == mmode.print_comp_init_vlr_continuous.value):
-        print("print component initialization for vlr using conti index, %s!",
-              var_name)
-    elif(mode.value == mmode.print_comp_init_vlu_independent.value):
-        print("print component initialization for vlu using indep index, %s!",
-              var_name)
-    elif(mode.value == mmode.print_comp_init_vlu_continuous.value):
-        print("print component initialization for vlu using conti index, %s!",
-              var_name)
-    elif(mode.value == mmode.print_comp_init_more_input_output.value):
-        print("print component initialization for more input/output var, %s!",
-              var_name)
-    else:
-        raise Exception("print initialization mode undefined for %s!",
-                        var_name)
+# which should be defined in Codes/app.py
+def print_comp_initialization(mode, var_name, aIndex_list,
+                              str_name, str_varlistIndex):
+    raise Exception("print_component_initialization() undefined!")
 
 
-def print_component_equation(mode, var_name, index_list):
-    if(mode.value == mmode.print_comp_eqn_primary.value):
-        print("print component equation: primary, %s!", var_name)
-    elif(mode.value == mmode.print_comp_eqn_add_to_primary.value):
-        print("print component equation: add to primary, %s!", var_name)
+def print_component_initialization(mode, var_name, aIndex_list, cIndex_list):
+    str_name = str(
+        globals()[var_name][tuple(cIndex_list)].expr()).replace("_ijk_", "")
+    str_varlistIndex = str(map_component_to_varlist[
+        [i[0] for i in
+         map_component_to_varlist].index(str_name.replace("_ijk_", ""))][1])
+    print_comp_initialization(mode, var_name, aIndex_list,
+                              str_name, str_varlistIndex)
+
+
+def print_component_equation(mode, var_name, cIndex_list):
+    expr_name = globals()[var_name][tuple(cIndex_list)].expr()
+    # different modes
+    if(mode.value == mmode.print_comp_eqn_primary.value or
+       mode.value == mmode.print_comp_eqn_add_to_primary.value):
+        rhss_name = globals()[var_name.replace(prefix_of_dt, "", 1)+"_rhs"][
+            tuple(cIndex_list)].expr()
     elif(mode.value == mmode.print_comp_eqn_primary_with_suffix.value):
-        print("print component equation: primary with suffix, %s!", var_name)
+        rhss_name = globals()[
+            var_name.replace(prefix_of_dt, "", 1)+suffix_of_rhs+"_rhs"][
+            tuple(cIndex_list)].expr()
     elif(mode.value == mmode.print_comp_eqn_temp.value):
-        print("print component equation: temporary, %s!", var_name)
+        rhss_name = globals()[var_name+"_rhs"][tuple(cIndex_list)].expr()
     else:
         raise Exception("print equation mode undefined yet for %s!", var_name)
+    # tranform to string
+    lhs_str = str(expr_name).replace("_ijk_", grid_index)
+    rhs_str = str(rhss_name).replace("_ijk_", grid_index)
+    # write to file
+    with open(cfilename, "a") as cf:
+        if(mode.value == mmode.print_comp_eqn_add_to_primary.value):
+            cf.write(lhs_str + " +=\n")
+        elif(mode.value == mmode.print_comp_eqn_temp.value):
+            cf.write("double " + lhs_str + " =\n")
+        else:
+            cf.write(lhs_str + " =\n")
+        cf.write(rhs_str + ";\n\n")
 
 
-def print_component(mode, var_name, index_list):
+def print_component(mode, var_name, aIndex_list, cIndex_list):
     if(mmode.print_comp_init.name in mode.name):
-        print_component_initialization(mode, var_name, index_list)
+        print_component_initialization(mode, var_name, aIndex_list,
+                                       cIndex_list)
     if(mmode.print_comp_eqn.name in mode.name):
-        print_component_equation(mode, var_name, index_list)
+        print_component_equation(mode, var_name, cIndex_list)
 
 
-def set_component_and_register_to_indexmap(mode, var_name, index_list):
-    index_tuple = tuple(index_list)
-    comp_name = "".join(
-        [n for nlist in [[var_name], [str(index) for index in index_list]]
-         for n in nlist])
+def set_component_and_register_to_indexmap(mode, var_name, cIndex_list):
+    global bool_new_varlist
+    index_tuple = tuple(cIndex_list)
+    if(dimens == 4):
+        comp_name = "".join(
+            [n for nlist in [[var_name], [str(index) for index in cIndex_list]]
+             for n in nlist])
+    else:
+        comp_name = "".join(
+            [n for nlist in [[var_name],
+                             [str(index+1) for index in cIndex_list]]
+             for n in nlist])
     if(mode.value == mmode.set_comp_temp.value):
         fullname = comp_name
     else:
-        fullname = "".join([comp_name, grid_index])
+        fullname = "".join([comp_name, "_ijk_"])
 
     if(len(map_component_to_varlist) == 0 or
        bool_new_varlist or  # for 'continuous varlist index case'
@@ -222,19 +265,24 @@ def set_component_and_register_to_indexmap(mode, var_name, index_list):
     # register to global index dictionary
     map_component_to_varlist.append([comp_name, varlist_index])
     # set component
-    if(len(index_list) == 0):  # scalar case
+    if(len(cIndex_list) == 0):  # scalar case
         # globals()[var_name].add_expr(var(var_name))
         pass
     else:  # tensor case
         globals()[var_name][index_tuple] = var(fullname)
 
+    bool_new_varlist = False
+
 
 # different modes
-def manipulate_component(mode, var_name, index_list):
+def manipulate_component(mode, var_name, aIndex_list, cIndex_list):
+    # set/skip 4d compoents for 3d tensor
+
+    # set/print components
     if(mmode.set_comp.name in mode.name):  # set components ...
-        set_component_and_register_to_indexmap(mode, var_name, index_list)
+        set_component_and_register_to_indexmap(mode, var_name, cIndex_list)
     elif(mmode.print_comp.name in mode.name):  # print components ...
-        print_component(mode, var_name, index_list)
+        print_component(mode, var_name, aIndex_list, cIndex_list)
     else:
         raise Exception("manipulate component undefined for var %s!!!",
                         var_name)
@@ -258,34 +306,38 @@ def define_tensors(var_name, n_contravariant, n_covariant,
 
 
 # manipulate components
-def manipulate_components(mode, var_name, n_total, sym_tuple, antisym_tuple):
+def manipulate_components(mode, var_name, n_total, sym_tuple, antisym_tuple,
+                          aIndex_list):
     index_min = 0
-    index_max = 3
+    index_max = dimens-1
+
+    def mani_component_value(cIndex_list):
+        manipulate_component(mode, var_name, aIndex_list, cIndex_list)
 
     # scalar case
     if(n_total == 0):
-        manipulate_component(mode, var_name, [])
+        mani_component_value([])
 
     # tensor case without symmetry
     elif(sym_tuple is None and antisym_tuple is None):
         if(n_total == 1):
             for a in rg1(index_min, index_max):
-                manipulate_component(mode, var_name, [a])
+                mani_component_value([a])
         elif(n_total == 2):
             for a in rg1(index_min, index_max):
                 for b in rg1(index_min, index_max):
-                    manipulate_component(mode, var_name, [a, b])
+                    mani_component_value([a, b])
         elif(n_total == 3):
             for c in rg1(index_min, index_max):
                 for a in rg1(index_min, index_max):
                     for b in rg1(index_min, index_max):
-                        manipulate_component(mode, var_name, [c, a, b])
+                        mani_component_value([c, a, b])
         elif(n_total == 4):
             for c in rg1(index_min, index_max):
                 for d in rg1(index_min, index_max):
                     for a in rg1(index_min, index_max):
                         for b in rg1(index_min, index_max):
-                            manipulate_component(mode, var_name, [c, d, a, b])
+                            mani_component_value([c, d, a, b])
         else:
             raise Exception("tensor type of %s undefined yet!!!" % var_name)
 
@@ -297,12 +349,12 @@ def manipulate_components(mode, var_name, n_total, sym_tuple, antisym_tuple):
             if(sym_tuple is not None):
                 for a in rg1(index_min, index_max):
                     for b in rg1(a, index_max):
-                        manipulate_component(mode, var_name, [a, b])
+                        mani_component_value([a, b])
             # [ab]
             elif(antisym_tuple is not None):
                 for a in rg1(index_min, index_max):
                     for b in rg1(a+1, index_max):
-                        manipulate_component(mode, var_name, [a, b])
+                        mani_component_value([a, b])
             else:
                 raise Exception("symmetry of two-index %s undefined yet!!!" %
                                 var_name)
@@ -315,13 +367,13 @@ def manipulate_components(mode, var_name, n_total, sym_tuple, antisym_tuple):
                     for c in rg1(index_min, index_max):
                         for a in rg1(index_min, index_max):
                             for b in rg1(a, index_max):
-                                manipulate_component(mode, var_name, [c, a, b])
+                                mani_component_value([c, a, b])
                 # (ab)c
                 elif(sym_tuple[0] == 0 and sym_tuple[1] == 1):
                     for a in rg1(index_min, index_max):
                         for b in rg1(a, index_max):
                             for c in rg1(index_min, index_max):
-                                manipulate_component(mode, var_name, [a, b, c])
+                                mani_component_value([a, b, c])
                 else:
                     raise Exception("sym of %s undefined yet!!!" %
                                     var_name)
@@ -331,13 +383,13 @@ def manipulate_components(mode, var_name, n_total, sym_tuple, antisym_tuple):
                     for c in rg1(index_min, index_max):
                         for a in rg1(index_min, index_max):
                             for b in rg1(a+1, index_max):
-                                manipulate_component(mode, var_name, [c, a, b])
+                                mani_component_value([c, a, b])
                 # [ab]c
                 elif(antisym_tuple[0] == 0 and antisym_tuple[1] == 1):
                     for a in rg1(index_min, index_max):
                         for b in rg1(a+1, index_max):
                             for c in rg1(index_min, index_max):
-                                manipulate_component(mode, var_name, [a, b, c])
+                                mani_component_value([a, b, c])
                 else:
                     raise Exception("antisymm of %s undefined yet!!!" %
                                     var_name)
@@ -355,8 +407,7 @@ def manipulate_components(mode, var_name, n_total, sym_tuple, antisym_tuple):
                             for d in rg1(index_min, index_max):
                                 for a in rg1(index_min, index_max):
                                     for b in rg1(a, index_max):
-                                        manipulate_component(mode, var_name,
-                                                             [c, d, a, b])
+                                        mani_component_value([c, d, a, b])
                     else:
                         raise Exception("sym tuple of %s undefined yet!!!" %
                                         var_name)
@@ -369,8 +420,7 @@ def manipulate_components(mode, var_name, n_total, sym_tuple, antisym_tuple):
                             for d in rg1(c, index_max):
                                 for a in rg1(index_min, index_max):
                                     for b in rg1(a, index_max):
-                                        manipulate_component(mode, var_name,
-                                                             [c, d, a, b])
+                                        mani_component_value([c, d, a, b])
                     else:
                         raise Exception("sym list of %s undefined yet!!!" %
                                         var_name)
@@ -386,8 +436,7 @@ def manipulate_components(mode, var_name, n_total, sym_tuple, antisym_tuple):
                             for d in rg1(index_min, index_max):
                                 for a in rg1(index_min, index_max):
                                     for b in rg1(a+1, index_max):
-                                        manipulate_component(mode, var_name,
-                                                             [c, d, a, b])
+                                        mani_component_value([c, d, a, b])
                     else:
                         raise Exception("antisym tuple of %s undefined yet!!!"
                                         % var_name)
@@ -400,8 +449,7 @@ def manipulate_components(mode, var_name, n_total, sym_tuple, antisym_tuple):
                             for d in rg1(c+1, index_max):
                                 for a in rg1(index_min, index_max):
                                     for b in rg1(a+1, index_max):
-                                        manipulate_component(mode, var_name,
-                                                             [c, d, a, b])
+                                        mani_component_value([c, d, a, b])
                     else:
                         raise Exception("antisym list of %s undefined yet!!!" %
                                         var_name)
@@ -419,8 +467,7 @@ def manipulate_components(mode, var_name, n_total, sym_tuple, antisym_tuple):
                             for d in rg1(c, index_max):
                                 for a in rg1(index_min, index_max):
                                     for b in rg1(a+1, index_max):
-                                        manipulate_component(mode, var_name,
-                                                             [c, d, a, b])
+                                        mani_component_value([c, d, a, b])
                 else:
                     raise Exception("mixed symmetry of %s undefined yet!!!" %
                                     var_name)

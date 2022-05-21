@@ -5,6 +5,10 @@ import enum
 import re
 
 
+#########
+# enums #
+#########
+
 # manipulate mode
 class ManipulateMode(enum.Enum):
     set_comp = enum.auto()  # group
@@ -45,8 +49,8 @@ class VarLine:
         n_covariant = 0
         sym_tuple = None
         antisym_tuple = None
-        # temp variables
         aIndex_list = []
+        # temp variables
         symm_list = []
         # get abstract index list
         aIndex = re.search(r'\[.*?\]', self.infos[0]).group(0).strip('[]')
@@ -105,7 +109,8 @@ class VarLine:
             # print("sym_tuple = ", sym_tuple,
             #       " antisym_tuple = ", antisym_tuple)
 
-        return [name, n_contravariant, n_covariant, sym_tuple, antisym_tuple]
+        return [name, n_contravariant, n_covariant, sym_tuple, antisym_tuple,
+                aIndex_list]
 
     def prefix_of(self, value):
         var_name = "".join([value, self.names[0]])
@@ -121,3 +126,16 @@ class VarLine:
 # redefine range
 def range1(start, end):
     return range(start, end+1)
+
+
+# return bool: check if the abstract index is a 3D index or not:
+#  4D: a,b,...,h,h1,h2,h... ,
+#  3D: i,j,...,z,z1,z2,z... .
+def is_3d_aIndex(aIndex):
+    if(len(aIndex) > 0):
+        if(ord(aIndex[0].replace("-", "")) >= ord('i')):
+            return True
+        else:
+            return False
+    else:
+        raise Exception("no abstract index!!!")
