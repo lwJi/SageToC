@@ -180,27 +180,87 @@ class TemporaryVarlist(Varlist):
         self.maniComponents(mode, suffix)
 
 
+class ComponentInfo:
+
+    def __init__(self, var_name, aIndex_list, cIndex_list):
+        self.var_name = var_name
+        self.aIndex_list = aIndex_list
+        self.cIndex_list = cIndex_list
+
+    def getVar_name(self):
+        return self.var_name
+
+    def getaIndex_list(self):
+        return self.aIndex_list
+
+    def getcIndex_list(self):
+        return self.cIndex_list
+
+    def getStr_name_varlistIndex(self):
+        if(len(self.cIndex_list) > 0):
+            str_name = str(globals()[
+                self.var_name][
+                tuple(self.cIndex_list)].expr()).replace("_ijk_", "")
+        else:
+            str_name = str(globals()[
+                self.var_name].expr()).replace("_ijk_", "")
+        str_varlistIndex = str(map_component_to_varlist[
+            [i[0] for i in map_component_to_varlist].index(
+                str_name.replace("_ijk_", ""))][1])
+        return [str_name, str_varlistIndex]
+
+    def is_3d_aIndex(self, i):
+        return mf.is_3d_aIndex(self.aIndex_list[i])
+
+    # return bool: check if the i-th index is a 4d index in 3d tensor
+    # (from abstrct index)
+    def is_4d_cIndex_in_3d_aIndex(self, i):
+        return mf.is_4d_cIndex_in_3d_aIndex(
+            self.aIndex_list[i], self.cIndex_list[i]) and dimens == 4
+
+    # return bool, check if the current component of a 3D tensor
+    # (from abstract index) contains a 4D component index (0-comp):
+    #   say cIndex_list=[0,0,2], aIndex_list=['i','a','b']
+    def is_4d_cIndexList_in_3d_aIndex(self):
+        is_4d_cIndexList = False
+        for i in range(len(self.cIndex_list)):
+            if(self.is_4d_cIndex_in_3d_aIndex(i)):
+                is_4d_cIndexList = True
+        return is_4d_cIndexList
+
+    # return bool, check if the 0-th component is a up/contravariant index for
+    # a 3D tensor:
+    #   we only need to find out those 'up' 0-component, whose 'down' indexes
+    #   are non-zero.
+    def is_4d_upCIndexList_in_3d_aIndex(self):
+        is_4d_upCIndexList = False
+        # is there a 0-th up index in the component list
+        for i in range(len(self.cIndex_list)):
+            if(self.is_4d_cIndex_in_3d_aIndex(i) and
+               ('-' not in self.aIndex_list[i])):
+                is_4d_upCIndexList = True
+        # if there is also a 0-th down index in the component list, skip
+        if(is_4d_upCIndexList):
+            for i in range(len(self.cIndex_list)):
+                if(self.is_4d_cIndex_in_3d_aIndex(i) and
+                   ('-' in self.aIndex_list[i])):
+                    is_4d_upCIndexList = False
+        # return
+        return is_4d_upCIndexList
+
+
 ####################
 # global functions #
 ####################
 
 # which should be defined in Codes/app.py
-def print_comp_initialization(mode, var_name, aIndex_list,
-                              str_name, str_varlistIndex):
+def print_component_initialization(mode, comp_info):
     raise Exception("print_component_initialization() undefined!")
 
 
-def print_component_initialization(mode, var_name, aIndex_list, cIndex_list):
-    str_name = str(
-        globals()[var_name][tuple(cIndex_list)].expr()).replace("_ijk_", "")
-    str_varlistIndex = str(map_component_to_varlist[
-        [i[0] for i in
-         map_component_to_varlist].index(str_name.replace("_ijk_", ""))][1])
-    print_comp_initialization(mode, var_name, aIndex_list,
-                              str_name, str_varlistIndex)
-
-
-def print_component_equation(mode, var_name, cIndex_list):
+def print_component_equation(mode, comp_info):
+    var_name = comp_info.getVar_name()
+    cIndex_list = comp_info.getcIndex_list()
     expr_name = globals()[var_name][tuple(cIndex_list)].expr()
     # different modes
     if(mode.value == mmode.print_comp_eqn_primary.value or
@@ -229,16 +289,18 @@ def print_component_equation(mode, var_name, cIndex_list):
         cf.write(rhs_str + ";\n\n")
 
 
-def print_component(mode, var_name, aIndex_list, cIndex_list):
+def print_component(mode, comp_info):
     if(mmode.print_comp_init.name in mode.name):
-        print_component_initialization(mode, var_name, aIndex_list,
-                                       cIndex_list)
+        print_component_initialization(mode, comp_info)
     if(mmode.print_comp_eqn.name in mode.name):
-        print_component_equation(mode, var_name, cIndex_list)
+        print_component_equation(mode, comp_info)
 
 
-def set_component_and_register_to_indexmap(mode, var_name, cIndex_list):
+def set_component_and_register_to_indexmap(mode, comp_info):
+    var_name = comp_info.getVar_name()
+    cIndex_list = comp_info.getcIndex_list()
     global bool_new_varlist
+
     index_tuple = tuple(cIndex_list)
     if(dimens == 4):
         comp_name = "".join(
@@ -275,17 +337,17 @@ def set_component_and_register_to_indexmap(mode, var_name, cIndex_list):
 
 
 # different modes
-def manipulate_component(mode, var_name, aIndex_list, cIndex_list):
+def manipulate_component(mode, comp_info):
     # set/skip 4d compoents for 3d tensor
 
     # set/print components
     if(mmode.set_comp.name in mode.name):  # set components ...
-        set_component_and_register_to_indexmap(mode, var_name, cIndex_list)
+        set_component_and_register_to_indexmap(mode, comp_info)
     elif(mmode.print_comp.name in mode.name):  # print components ...
-        print_component(mode, var_name, aIndex_list, cIndex_list)
+        print_component(mode, comp_info)
     else:
         raise Exception("manipulate component undefined for var %s!!!",
-                        var_name)
+                        comp_info.getVar_name)
 
 
 # define tensors
@@ -312,7 +374,9 @@ def manipulate_components(mode, var_name, n_total, sym_tuple, antisym_tuple,
     index_max = dimens-1
 
     def mani_component_value(cIndex_list):
-        manipulate_component(mode, var_name, aIndex_list, cIndex_list)
+        # manipulate_component(mode, var_name, aIndex_list, cIndex_list)
+        manipulate_component(mode,
+                             ComponentInfo(var_name, aIndex_list, cIndex_list))
 
     # scalar case
     if(n_total == 0):

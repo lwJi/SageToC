@@ -133,9 +133,15 @@ def range1(start, end):
 #  3D: i,j,...,z,z1,z2,z... .
 def is_3d_aIndex(aIndex):
     if(len(aIndex) > 0):
-        if(ord(aIndex[0].replace("-", "")) >= ord('i')):
+        if(ord(aIndex.replace("-", "")[0]) >= ord('i')):
             return True
         else:
             return False
     else:
         raise Exception("no abstract index!!!")
+
+
+# return bool: check if this component index is a 4d index in 3d tensor
+# (from abstrct index)
+def is_4d_cIndex_in_3d_aIndex(aIndex, cIndex):
+    return is_3d_aIndex(aIndex) and cIndex == 0
