@@ -130,7 +130,7 @@ class dtEvolutionVarlist(Varlist):
             mode = mmode.print_comp_init_vlr_independent
         self.maniComponents(mode)
 
-    def printEqn(self, suffix=None, mode=None):
+    def printEqn(self, mode=None, suffix=None):
         if(mode is None):
             mode = mmode.print_comp_eqn_primary
         self.maniComponents(mode, suffix)
@@ -161,7 +161,7 @@ class MoreOutputVarlist(Varlist):
             mode = mmode.print_comp_init_more_input_output
         self.maniComponents(mode)
 
-    def printEqn(self, suffix=None, mode=None):
+    def printEqn(self, mode=None, suffix=None):
         if(mode is None):
             mode = mmode.print_comp_eqn_primary
         self.maniComponents(mode, suffix)
@@ -174,7 +174,7 @@ class TemporaryVarlist(Varlist):
             mode = mmode.set_comp_temp
         self.maniComponents(mode)
 
-    def printEqn(self, suffix=None, mode=None):
+    def printEqn(self, mode=None, suffix=None):
         if(mode is None):
             mode = mmode.print_comp_eqn_temp
         self.maniComponents(mode, suffix)
@@ -196,7 +196,11 @@ class ComponentInfo:
     def getcIndex_list(self):
         return self.cIndex_list
 
+    def getIndex_length(self):
+        return len(self.aIndex_list)
+
     def getStr_name_varlistIndex(self):
+        # set str_name
         if(len(self.cIndex_list) > 0):
             str_name = str(globals()[
                 self.var_name][
@@ -204,9 +208,12 @@ class ComponentInfo:
         else:
             str_name = str(globals()[
                 self.var_name].expr()).replace("_ijk_", "")
-        str_varlistIndex = str(map_component_to_varlist[
-            [i[0] for i in map_component_to_varlist].index(
-                str_name.replace("_ijk_", ""))][1])
+        # set str_varlistIndex
+        str_varlistIndex = str(
+            map_component_to_varlist[
+                [i[1] for i in map_component_to_varlist].index(
+                    str_name.replace("_ijk_", ""))][2])
+        # return list
         return [str_name, str_varlistIndex]
 
     def is_3d_aIndex(self, i):
@@ -265,14 +272,16 @@ def print_component_equation(mode, comp_info):
     # different modes
     if(mode.value == mmode.print_comp_eqn_primary.value or
        mode.value == mmode.print_comp_eqn_add_to_primary.value):
-        rhss_name = globals()[var_name.replace(prefix_of_dt, "", 1)+"_rhs"][
+        rhss_name = globals()[
+            var_name.replace(prefix_of_dt, "", 1) + "_rhs"][
             tuple(cIndex_list)].expr()
     elif(mode.value == mmode.print_comp_eqn_primary_with_suffix.value):
         rhss_name = globals()[
-            var_name.replace(prefix_of_dt, "", 1)+suffix_of_rhs+"_rhs"][
+            var_name.replace(prefix_of_dt, "", 1) + "_rhs" + suffix_of_rhs][
             tuple(cIndex_list)].expr()
     elif(mode.value == mmode.print_comp_eqn_temp.value):
-        rhss_name = globals()[var_name+"_rhs"][tuple(cIndex_list)].expr()
+        rhss_name = globals()[
+            var_name + "_rhs"][tuple(cIndex_list)].expr()
     else:
         raise Exception("print equation mode undefined yet for %s!", var_name)
     # tranform to string
@@ -304,12 +313,11 @@ def set_component_and_register_to_indexmap(mode, comp_info):
     index_tuple = tuple(cIndex_list)
     if(dimens == 4):
         comp_name = "".join(
-            [n for nlist in [[var_name], [str(index) for index in cIndex_list]]
+            [n for nlist in [[var_name], [str(i) for i in cIndex_list]]
              for n in nlist])
     else:
         comp_name = "".join(
-            [n for nlist in [[var_name],
-                             [str(index+1) for index in cIndex_list]]
+            [n for nlist in [[var_name], [str(i+1) for i in cIndex_list]]
              for n in nlist])
     if(mode.value == mmode.set_comp_temp.value):
         fullname = comp_name
@@ -319,13 +327,13 @@ def set_component_and_register_to_indexmap(mode, comp_info):
     if(len(map_component_to_varlist) == 0 or
        bool_new_varlist or  # for 'continuous varlist index case'
        (mode.value == mmode.set_comp_gf_independent.value and
-            var_name != map_component_to_varlist[-1][0][0:len(var_name)])):
+            var_name != map_component_to_varlist[-1][0])):
         varlist_index = 0
     else:
-        varlist_index = map_component_to_varlist[-1][1] + 1
+        varlist_index = map_component_to_varlist[-1][2] + 1
 
     # register to global index dictionary
-    map_component_to_varlist.append([comp_name, varlist_index])
+    map_component_to_varlist.append([var_name, comp_name, varlist_index])
     # set component
     if(len(cIndex_list) == 0):  # scalar case
         # globals()[var_name].add_expr(var(var_name))
