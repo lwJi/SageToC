@@ -1,11 +1,10 @@
-# noqa: E402
-
 # Nmesh.py
 # (c) Liwei Ji 05/2022
 
-import _paths # noqa
-import SageToC as Sg
-from misc_functions import ManipulateMode as mmode
+import sys
+sys.path.append('..')
+import SageToC as Sg # noqa
+from misc_functions import ManipulateMode as mmode # noqa
 
 
 def print_component_initialization(mode, comp_info):

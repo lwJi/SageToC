@@ -2,7 +2,21 @@
 /* (c) Liwei Ji 05/2022 */
 /* Produced with SageToC.py */
 
-extern tADM ADM[1];
+extern tADM ADM[1]
+
+void test(tVarList *vlu, tVarList *vlr)
+{
+tMesh *mesh = u->mesh;
+int Msqr = GetvLax(Par("ADM_ConstraintNorm"), "Msqr");
+
+formylnodes(mesh)
+{
+tNode *node = MyLnode;
+int ijk;
+
+forpoints(node, ijk)
+{
+int iMxx = Ind("ADM_gxx");
 
 double *dtu1 = Vard(node, Vind(vlr, ADM->i_ux));
 double *dtu2 = Vard(node, Vind(vlr, ADM->i_ux + 1));
@@ -51,4 +65,8 @@ dtu3[ijk] =
 v3;
 
 
+}
+
+} /* end of points */
+} /* end of nodes */
 }

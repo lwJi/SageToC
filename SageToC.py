@@ -1,12 +1,14 @@
 # STC_global.py
 # (c) Liwei Ji 05/2022
 
-from sage.calculus.var import var
 import misc_functions as mf
+from sage.calculus.var import var
 from misc_functions import range1 as rg1
 from misc_functions import ManipulateMode as mmode
 
-print('Welcome to SageToC (a code generator)')
+print('=======================================')
+print(' Welcome to SageToC (a code generator) ')
+print('=======================================')
 
 
 ####################
